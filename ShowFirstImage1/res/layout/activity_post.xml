@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.example.suishoupaipublish.MainActivity"
+    tools:ignore="MergeRootFrame" >
+
+    <!-- 顶部添加文字 -->
+
+    <RelativeLayout
+        android:id="@+id/Layout_top"
+        android:layout_width="fill_parent"
+        android:layout_height="40dp"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="5dp"
+        android:gravity="center"
+        android:orientation="horizontal" >
+
+        <TextView
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="发布说说"
+            android:textSize="25sp" />
+    </RelativeLayout>
+    <!-- 底部按钮 -->
+
+    <RelativeLayout
+        android:id="@+id/Layout_bottom"
+        android:layout_width="fill_parent"
+        android:layout_height="50dp"
+        android:layout_alignParentBottom="true"
+        android:gravity="center" >
+
+        <Button
+            android:id="@+id/cancle_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentTop="true"
+            android:layout_marginRight="24dp"
+            android:text="取消发布"
+            android:textSize="20sp" />
+
+        <Button
+            android:id="@+id/post_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentTop="true"
+            android:layout_marginLeft="28dp"
+            android:text="发布说说"
+            android:textSize="20sp" />
+    </RelativeLayout>
+    <!-- 显示图片 -->
+
+    <RelativeLayout
+        android:id="@+id/Content_Layout"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_above="@id/Layout_bottom"
+        android:layout_below="@id/Layout_top"
+        android:gravity="center" >
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_alignParentBottom="true"
+            android:orientation="vertical" >
+
+            <!-- 设置运行多行 设置圆角图形 黑色字体 -->
+
+            <EditText
+                android:id="@+id/content_et"
+                android:layout_width="fill_parent"
+                android:layout_height="120dp"
+                android:layout_margin="12dp"
+                android:background="@drawable/editview_shape"
+                android:hint="随手说出你此刻的心声..."
+                android:maxLength="500"
+                android:singleLine="false"
+                android:textColor="#000000"
+                android:textSize="20sp" />
+            <!-- 网格显示图片 行列间距5dp 每列宽度90dp -->
+
+            <Button
+                android:id="@+id/emotion_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="添加表情" />
+            
+            <!-- 表情页 -->
+            <RelativeLayout
+                android:id="@+id/ll_emotion"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="#f6f5f5"
+                android:visibility="gone" >
+
+                <android.support.v4.view.ViewPager
+                    android:id="@+id/vp_contains"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" >
+                </android.support.v4.view.ViewPager>
+
+                <LinearLayout
+                    android:id="@+id/iv_image"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentBottom="true"
+                    android:layout_marginBottom="6dip"
+                    android:gravity="center"
+                    android:orientation="horizontal" >
+                </LinearLayout>
+            </RelativeLayout>
+
+    		<!-- 添加要上传的图片 -->
+            <GridView
+                android:id="@+id/gridView"
+                android:layout_width="fill_parent"
+                android:layout_height="200dp"
+                android:layout_margin="10dp"
+                android:background="#EFDFDF"
+                android:columnWidth="90dp"
+                android:gravity="center"
+                android:horizontalSpacing="5dp"
+                android:numColumns="4"
+                android:stretchMode="columnWidth"
+                android:verticalSpacing="5dp" >
+            </GridView>
+
+            <TextView
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="(友情提示:上传文字不能超过100字，只能添加9张图片,长按图片可以删除已添加图片)" />
+        </LinearLayout>
+    </RelativeLayout>
+
+</RelativeLayout>
