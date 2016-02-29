@@ -2,29 +2,38 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent" >
-    
-    <ImageView 
-        android:id="@+id/icon" 
-        android:layout_height="wrap_content"
+
+    <ImageView
+        android:id="@+id/icon"
         android:layout_width="wrap_content"
-        android:scaleType="centerCrop"
-        android:background="@drawable/ic_launcher"/>
-    <TextView 
+        android:layout_height="wrap_content"
+        android:background="@drawable/ic_launcher"
+        android:contentDescription="@string/icon"
+        android:scaleType="centerCrop" />
+
+    <TextView
         android:id="@+id/name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_toRightOf="@id/icon"
-        android:textSize="20sp"
-        android:text="name"/>
-    <TextView 
+        android:text="@string/name"
+        android:textSize="20sp" />
+
+    <TextView
         android:id="@+id/content"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@id/name"
         android:layout_toRightOf="@id/icon"
-        android:text="content"
-        android:textSize="20sp"/>
-    <com.zlf.testdemo01.NoScrollGridView 
+        android:text="@string/content"
+        android:textSize="20sp" />
+
+    <!--
+         horizontalSpacing：水平距离，即两列之间的距离。
+    	stretchMode：缩放模式
+    -->
+
+    <com.zlf.testdemo01.NoScrollGridView
         android:id="@+id/gridview"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
@@ -35,8 +44,23 @@
         android:horizontalSpacing="2.5dp"
         android:numColumns="3"
         android:stretchMode="columnWidth"
-        android:verticalSpacing="2.5dp">
-        
+        android:verticalSpacing="2.5dp" >
     </com.zlf.testdemo01.NoScrollGridView>
 
+    <!-- <TextView
+        android:id="@+id/insert_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@id/name"
+        android:layout_below="@id/gridview"
+        android:text="insert_time" />
+
+    <ImageButton
+        android:id="@+id/comment"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_below="@id/gridview"
+        android:layout_marginLeft="5dp"
+        android:background="@drawable/comment" /> -->
 </RelativeLayout>

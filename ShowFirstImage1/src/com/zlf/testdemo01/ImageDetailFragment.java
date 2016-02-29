@@ -17,7 +17,7 @@ import uk.co.senab.photoview.PhotoViewAttacher;
 import uk.co.senab.photoview.PhotoViewAttacher.OnPhotoTapListener;
 
 /**
- * 单张图片显示Fragment
+ * 
  */
 public class ImageDetailFragment extends Fragment {
 	private String mImageUrl;

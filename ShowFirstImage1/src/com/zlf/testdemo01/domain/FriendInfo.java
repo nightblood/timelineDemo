@@ -1,6 +1,9 @@
 package com.zlf.testdemo01.domain;
 
+import java.util.ArrayList;
 import java.util.List;
+
+import com.zlf.testdemo01.Comment;
 
 import android.graphics.Bitmap;
 
@@ -16,6 +19,9 @@ public class FriendInfo {
 	private List<ImageInfo> images;
 	private boolean imagesCached = false;
 	private Bitmap iconBitmap;
+	
+	private ArrayList<Comment> comments = new ArrayList<Comment>();
+	
 	public int getId() {
 		return id;
 	}
@@ -76,5 +82,11 @@ public class FriendInfo {
 	}
 	public void setIconBitmap(Bitmap iconBitmap) {
 		this.iconBitmap = iconBitmap;
+	}
+	public ArrayList<Comment> getComments() {
+		return comments;
+	}
+	public void setComments(ArrayList<Comment> comments) {
+		this.comments = comments;
 	}
 }

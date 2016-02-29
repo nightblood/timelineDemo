@@ -14,6 +14,8 @@ import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
@@ -32,26 +34,32 @@ import com.lidroid.xutils.http.HttpHandler;
 import com.lidroid.xutils.http.ResponseInfo;
 import com.lidroid.xutils.http.callback.RequestCallBack;
 import com.lidroid.xutils.http.client.HttpRequest;
-import com.nostra13.universalimageloader.core.DisplayImageOptions;
-import com.nostra13.universalimageloader.core.ImageLoader;
-import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.zlf.testdemo01.RefreshLayout.OnLoadListener;
 import com.zlf.testdemo01.domain.EmotionInfo;
 import com.zlf.testdemo01.domain.FriendInfo;
 import com.zlf.testdemo01.domain.ImageInfo;
 
+import android.app.ActionBar.LayoutParams;
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ListAdapter;
 import android.widget.ListView;
+import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -81,6 +89,9 @@ public class MainActivity extends Activity implements OnClickListener ,SwipeRefr
 	private static int ON_LOAD = 0;
 	private static int ON_REFERSH = 1;
 	private static int pageNum = 1;
+	private View popupView;
+	private EditText editComment;
+	private Button commentBtn;
 	
 	private Handler refreshHandler = new Handler()
 	{
@@ -93,6 +104,25 @@ public class MainActivity extends Activity implements OnClickListener ,SwipeRefr
 				pageNum = 1;
 				getTimeLineData(ON_REFERSH);
 				break;
+			}
+		};
+	};
+	private Handler handler = new Handler() {
+		public void handleMessage(android.os.Message msg)
+		{
+			if (msg.what == 1) {
+				showPopupWindow();
+
+				Timer timer = new Timer();
+				timer.schedule(new TimerTask() {
+
+					public void run() {
+						InputMethodManager inputManager = (InputMethodManager) editComment.getContext()
+								.getSystemService(Context.INPUT_METHOD_SERVICE);
+						inputManager.showSoftInput(editComment, 0);
+					}
+
+				}, 50);
 			}
 		};
 	};
@@ -117,7 +147,7 @@ public class MainActivity extends Activity implements OnClickListener ,SwipeRefr
 		download.setOnClickListener(this);
 		
 //		adapter = new MyAdapter(friendList, this);
-		adapter = new MyItemAdapter(friendList, this);
+		adapter = new MyItemAdapter(handler, friendList, this);
 		listview.setAdapter((ListAdapter) adapter);
 
 		EmotionInfo.emotionPath = localPath + "/emoticon/";
@@ -649,5 +679,29 @@ public class MainActivity extends Activity implements OnClickListener ,SwipeRefr
 		// 读取下一页朋友圈数据
 		getTimeLineData(ON_LOAD);
 		
+	}
+	
+	private void showPopupWindow() {
+		popupView = LayoutInflater.from(this).inflate(R.layout.popup_window, null);
+//		popupView = View.inflate(this, R.layout.popup_window, null);
+		editComment = (EditText) popupView.findViewById(R.id.edit);
+		commentBtn = (Button) popupView.findViewById(R.id.send);
+		PopupWindow window = new PopupWindow(popupView, LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, true);
+		window.setTouchable(true);
+
+		window.setBackgroundDrawable(new BitmapDrawable());
+		backgroundAlpha(1f);
+
+//		window.showAsDropDown(listview);
+		int []location = new int[2];
+		listview.getLocationInWindow(location);
+		window.showAtLocation(listview, Gravity.NO_GRAVITY, 0, 400);
+	}
+
+	private void backgroundAlpha(float f) {
+		
+		WindowManager.LayoutParams lp = getWindow().getAttributes();
+		lp.alpha = f; // 0.0-1.0
+		getWindow().setAttributes(lp);
 	}
 }

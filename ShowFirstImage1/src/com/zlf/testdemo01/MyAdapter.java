@@ -20,7 +20,6 @@ public class MyAdapter extends BaseAdapter {
 
 	private List<FriendInfo> friendsList;
 	public Context context;
-	// private Handler handler;
 
 	public enum VIEW_TYPE {
 		LAYOUT_TYPE_NO_IMAGE, 
