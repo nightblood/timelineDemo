@@ -11,14 +11,44 @@
     <LinearLayout
         android:id="@+id/linearLayout1"
         android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
+        android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
-        android:orientation="vertical" >
+        android:orientation="vertical"
+        android:weightSum="10" >
+ <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:visibility="visible"
+            android:orientation="horizontal" >
 
+            <Button
+                android:id="@+id/download_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="下载表情包" />
+
+            <Button
+                android:id="@+id/button1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="上传" />
+
+            <TextView
+                android:id="@+id/testText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="TextView" />
+        </LinearLayout>
+        
         <com.zlf.testdemo01.RefreshLayout
             android:id="@+id/id_swipe_ly"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" >
+            android:layout_height="match_parent"
+            android:layout_weight="8" >
 
             <ListView
                 android:id="@+id/lv"
@@ -26,32 +56,32 @@
                 android:layout_height="379dp" >
             </ListView>
         </com.zlf.testdemo01.RefreshLayout>
+
+       
     </LinearLayout>
 
-    <Button
-        android:id="@+id/download_btn"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:id="@+id/comment_view"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignBottom="@id/linearLayout1"
+        android:orientation="horizontal"
         android:layout_alignParentBottom="true"
-        android:text="下载表情包" />
+        android:visibility="invisible" >
 
-    <Button
-        android:id="@+id/button1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentRight="true"
-        android:text="上传" />
+        <EditText
+            android:id="@+id/comment_edit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="8"
+            android:background="#000000" />
 
-    <TextView
-        android:id="@+id/testText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignBaseline="@+id/button1"
-        android:layout_alignBottom="@id/button1"
-        android:layout_alignLeft="@id/linearLayout1"
-        android:layout_below="@id/button1"
-        android:text="TextView" />
+        <Button
+            android:id="@+id/comment_send"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" 
+            android:layout_weight="1"
+            android:textSize="10dp"
+            android:text="发送"/>
+    </LinearLayout>
 
 </RelativeLayout>

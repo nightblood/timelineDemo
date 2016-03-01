@@ -92,13 +92,13 @@ public class MainActivity extends Activity implements OnClickListener ,SwipeRefr
 	private View popupView;
 	private EditText editComment;
 	private Button commentBtn;
-	
-	private Handler refreshHandler = new Handler()
-	{
-		public void handleMessage(android.os.Message msg)
-		{
-			switch (msg.what)
-			{
+	private View commentView;
+	private EditText commentEdit;
+	private InputMethodManager inputManager;
+
+	private Handler refreshHandler = new Handler() {
+		public void handleMessage(android.os.Message msg) {
+			switch (msg.what) {
 			case REFRESH_COMPLETE:
 				// 重新获取服务上朋友圈信息
 				pageNum = 1;
@@ -108,21 +108,42 @@ public class MainActivity extends Activity implements OnClickListener ,SwipeRefr
 		};
 	};
 	private Handler handler = new Handler() {
-		public void handleMessage(android.os.Message msg)
-		{
+		public void handleMessage(android.os.Message msg) {
 			if (msg.what == 1) {
-				showPopupWindow();
+				// 1.use PoupWindow realize Comment Function
+				// showPopupWindow();
+				// Timer timer = new Timer();
+				// timer.schedule(new TimerTask() {
+				// public void run() {
+				// InputMethodManager inputManager = (InputMethodManager)
+				// editComment.getContext()
+				// .getSystemService(Context.INPUT_METHOD_SERVICE);
+				// inputManager.showSoftInput(editComment, 0);
+				// }
+				// }, 50);
 
-				Timer timer = new Timer();
-				timer.schedule(new TimerTask() {
+				// 2.
 
-					public void run() {
-						InputMethodManager inputManager = (InputMethodManager) editComment.getContext()
-								.getSystemService(Context.INPUT_METHOD_SERVICE);
-						inputManager.showSoftInput(editComment, 0);
-					}
+				if (commentView.getVisibility() != View.VISIBLE) {
+					commentView.setVisibility(View.VISIBLE);
 
-				}, 50);
+					// 设置焦点
+					commentEdit.setFocusable(true);
+					commentEdit.setFocusableInTouchMode(true);
+					commentEdit.requestFocus();
+
+					Timer timer = new Timer();
+					timer.schedule(new TimerTask() {
+						public void run() {
+							inputManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
+						}
+					}, 50);
+					// 调整 listview中item的位置，使其在编辑框的上方。
+					
+				} else {
+					inputManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
+					commentView.setVisibility(View.INVISIBLE);
+				}
 			}
 		};
 	};
@@ -131,18 +152,18 @@ public class MainActivity extends Activity implements OnClickListener ,SwipeRefr
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-		
-		mSwipeLayout = (RefreshLayout) findViewById(R.id.id_swipe_ly);
+
+		initView();
+
+		inputManager = (InputMethodManager) commentEdit.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
 
 		mSwipeLayout.setOnRefreshListener(this);
 		mSwipeLayout.setOnLoadListener(this);
-		
-		listview = (ListView) findViewById(R.id.lv);
+
 		localPath = getApplicationContext().getFilesDir().getAbsolutePath();
 		emotionPath = localPath + "/emotion.zip";
 		emotionDataPath = localPath + "/emotion.txt";
-		button = (Button) findViewById(R.id.button1);
-		download = (Button) findViewById(R.id.download_btn);
+
 		button.setOnClickListener(this);
 		download.setOnClickListener(this);
 		
@@ -167,9 +188,18 @@ public class MainActivity extends Activity implements OnClickListener ,SwipeRefr
 		System.out.println("onCreate end!");
 	}
 
-	public void onRefresh()
-	{
-//		refreshHandler.sendEmptyMessageDelayed(REFRESH_COMPLETE, 2000);
+	private void initView() {
+		commentView = findViewById(R.id.comment_view);
+		commentEdit = (EditText) findViewById(R.id.comment_edit);
+		commentBtn = (Button) findViewById(R.id.comment_send);
+		mSwipeLayout = (RefreshLayout) findViewById(R.id.id_swipe_ly);
+		listview = (ListView) findViewById(R.id.lv);
+		button = (Button) findViewById(R.id.button1);
+		download = (Button) findViewById(R.id.download_btn);
+	}
+
+	public void onRefresh() {
+		// refreshHandler.sendEmptyMessageDelayed(REFRESH_COMPLETE, 2000);
 		pageNum = 1;
 		getTimeLineData(ON_REFERSH);
 	}
@@ -236,12 +266,11 @@ public class MainActivity extends Activity implements OnClickListener ,SwipeRefr
 		HttpUtils http = new HttpUtils();
 		http.configCurrentHttpCacheExpiry(-1);
 		String url = TIMELINE_URL + "&page=" + pageNum;
-		http.send(HttpRequest.HttpMethod.GET, url,
-				new RequestCallBack<String>() {
-					@Override
-					public void onLoading(long total, long current, boolean isUploading) {
-//						testText.setText(current + "/" + total);
-					}
+		http.send(HttpRequest.HttpMethod.GET, url, new RequestCallBack<String>() {
+			@Override
+			public void onLoading(long total, long current, boolean isUploading) {
+				// testText.setText(current + "/" + total);
+			}
 
 					@Override
 					public void onSuccess(ResponseInfo<String> responseInfo) {

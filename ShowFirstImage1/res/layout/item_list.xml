@@ -47,7 +47,7 @@
         android:verticalSpacing="2.5dp" >
     </com.zlf.testdemo01.NoScrollGridView>
 
-    <!-- <TextView
+    <TextView
         android:id="@+id/insert_time"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -55,12 +55,12 @@
         android:layout_below="@id/gridview"
         android:text="insert_time" />
 
-    <ImageButton
+    <ImageView
         android:id="@+id/comment"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentRight="true"
         android:layout_below="@id/gridview"
         android:layout_marginLeft="5dp"
-        android:background="@drawable/comment" /> -->
+        android:background="@drawable/comment" /> 
 </RelativeLayout>
