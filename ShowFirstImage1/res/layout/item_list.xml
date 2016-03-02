@@ -62,5 +62,5 @@
         android:layout_alignParentRight="true"
         android:layout_below="@id/gridview"
         android:layout_marginLeft="5dp"
-        android:background="@drawable/comment" /> 
+        android:background="@drawable/comment_pressed" /> 
 </RelativeLayout>

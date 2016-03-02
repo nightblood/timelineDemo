@@ -7,61 +7,52 @@
     tools:context="com.example.suishoupaipublish.MainActivity"
     tools:ignore="MergeRootFrame" >
 
-    <!-- 顶部添加文字 -->
-
     <RelativeLayout
-        android:id="@+id/Layout_top"
+        android:id="@+id/layout_bottom"
         android:layout_width="fill_parent"
-        android:layout_height="40dp"
+        android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
-        android:layout_marginTop="5dp"
-        android:gravity="center"
-        android:orientation="horizontal" >
+        android:gravity="center" >
 
         <TextView
+            android:id="@+id/title"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
             android:gravity="center"
             android:text="发布说说"
             android:textSize="25sp" />
-    </RelativeLayout>
-    <!-- 底部按钮 -->
-
-    <RelativeLayout
-        android:id="@+id/Layout_bottom"
-        android:layout_width="fill_parent"
-        android:layout_height="50dp"
-        android:layout_alignParentBottom="true"
-        android:gravity="center" >
 
         <Button
             android:id="@+id/cancle_btn"
             android:layout_width="wrap_content"
-            android:layout_height="fill_parent"
+            android:layout_height="wrap_content"
             android:layout_alignParentRight="true"
-            android:layout_alignParentTop="true"
-            android:layout_marginRight="24dp"
+            android:layout_below="@id/title"
+            android:layout_marginRight="5dp"
             android:text="取消发布"
-            android:textSize="20sp" />
+            android:textSize="15sp" />
 
         <Button
             android:id="@+id/post_btn"
             android:layout_width="wrap_content"
-            android:layout_height="fill_parent"
+            android:layout_height="wrap_content"
             android:layout_alignParentLeft="true"
-            android:layout_alignParentTop="true"
-            android:layout_marginLeft="28dp"
+            android:layout_below="@id/title"
+            android:layout_marginLeft="5dp"
             android:text="发布说说"
-            android:textSize="20sp" />
+            android:textSize="15sp" />
     </RelativeLayout>
+    <!-- 顶部添加文字 -->
+
+
     <!-- 显示图片 -->
 
     <RelativeLayout
         android:id="@+id/Content_Layout"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
-        android:layout_above="@id/Layout_bottom"
-        android:layout_below="@id/Layout_top"
+        android:layout_below="@id/layout_bottom"
         android:gravity="center" >
 
         <LinearLayout
@@ -85,13 +76,27 @@
                 android:textSize="20sp" />
             <!-- 网格显示图片 行列间距5dp 每列宽度90dp -->
 
-            <Button
-                android:id="@+id/emotion_btn"
-                android:layout_width="wrap_content"
+            <RelativeLayout
+                android:id="@+id/function_view"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="添加表情" />
-            
+                
+                android:layout_margin="10dp"
+                android:background="#bfbfbf" >
+
+                <Button
+                    android:id="@+id/emotion_btn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="添加表情" />
+            </RelativeLayout>
+            <!-- <Button
+                    android:id="@+id/emotion_btn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="添加表情" /> -->
             <!-- 表情页 -->
+
             <RelativeLayout
                 android:id="@+id/ll_emotion"
                 android:layout_width="wrap_content"
@@ -116,7 +121,8 @@
                 </LinearLayout>
             </RelativeLayout>
 
-    		<!-- 添加要上传的图片 -->
+            <!-- 添加要上传的图片 -->
+
             <GridView
                 android:id="@+id/gridView"
                 android:layout_width="fill_parent"

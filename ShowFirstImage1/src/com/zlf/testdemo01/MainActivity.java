@@ -49,30 +49,37 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.util.Log;
+import android.view.GestureDetector;
+import android.view.GestureDetector.OnGestureListener;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.View.OnTouchListener;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 
-
-public class MainActivity extends Activity implements OnClickListener ,SwipeRefreshLayout.OnRefreshListener,OnLoadListener{
+public class MainActivity extends Activity
+		implements OnClickListener, SwipeRefreshLayout.OnRefreshListener, OnLoadListener,
+		OnGestureListener , OnTouchListener{
 
 	private static String TIMELINE_URL = "http://client.e0575.com/quanzi/app.php?c=quanzi&a=mainlist";
 	private static String EMOTION_URL = "http://client.e0575.com/quanzi/app.php?c=quanzi&a=emoticon";
 	private HttpClient client;
-	private List<FriendInfo> friendList=new ArrayList<FriendInfo>();
+	private List<FriendInfo> friendList = new ArrayList<FriendInfo>();
 	// private List<EmotionInfo> emotionList;
 	private ListView listview;
-//	private MyAdapter adapter;
+	// private MyAdapter adapter;
 	private MyItemAdapter adapter;
 	private Button button;
 	private Button download;
@@ -82,19 +89,21 @@ public class MainActivity extends Activity implements OnClickListener ,SwipeRefr
 	private TextView testText;
 	private boolean flagHasData = false;
 	private static String eMotionData;
-	
-//	private SwipeRefreshLayout mSwipeLayout;
+
 	private RefreshLayout mSwipeLayout;
 	private static final int REFRESH_COMPLETE = 0X110;
 	private static int ON_LOAD = 0;
 	private static int ON_REFERSH = 1;
 	private static int pageNum = 1;
+	public static boolean bInputVisiable = false;
 	private View popupView;
 	private EditText editComment;
 	private Button commentBtn;
-	private View commentView;
-	private EditText commentEdit;
-	private InputMethodManager inputManager;
+	private static View commentView;
+//	private EditText commentEdit;
+	private static IgnoreSoftKeyboardEditText commentEdit;
+	private static InputMethodManager inputManager;
+	private GestureDetector dector;
 
 	private Handler refreshHandler = new Handler() {
 		public void handleMessage(android.os.Message msg) {
@@ -107,7 +116,8 @@ public class MainActivity extends Activity implements OnClickListener ,SwipeRefr
 			}
 		};
 	};
-	private Handler handler = new Handler() {
+	private View header;
+	public static Handler handler = new Handler() {
 		public void handleMessage(android.os.Message msg) {
 			if (msg.what == 1) {
 				// 1.use PoupWindow realize Comment Function
@@ -132,19 +142,33 @@ public class MainActivity extends Activity implements OnClickListener ,SwipeRefr
 					commentEdit.setFocusableInTouchMode(true);
 					commentEdit.requestFocus();
 
-					Timer timer = new Timer();
-					timer.schedule(new TimerTask() {
-						public void run() {
-							inputManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
-						}
-					}, 50);
+					if (bInputVisiable == false) {
+						Timer timer = new Timer();
+						timer.schedule(new TimerTask() {
+							public void run() {
+								// 显示虚拟键盘输入法
+								inputManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
+							}
+						}, 50);
+						
+					}
 					// 调整 listview中item的位置，使其在编辑框的上方。
 					
 				} else {
-					inputManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
+					// 点击评论按钮已经显示编辑区的情况下，隐藏评论编辑区并且隐藏虚拟键盘
 					commentView.setVisibility(View.INVISIBLE);
+					if (bInputVisiable == true)
+						inputManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
 				}
+			} else if (msg.what == 2) {
+				// 处理点击返回键事件，隐藏EditText 和虚拟键盘
+				if (commentView.getVisibility() == View.VISIBLE) 
+					commentView.setVisibility(View.INVISIBLE);
+				
+				if (bInputVisiable == true)
+					inputManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
 			}
+			
 		};
 	};
 
@@ -153,8 +177,12 @@ public class MainActivity extends Activity implements OnClickListener ,SwipeRefr
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 
+		header = View.inflate(this, R.layout.listview_header, null);
 		initView();
 
+		//header.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+		listview.addHeaderView(header);
+		
 		inputManager = (InputMethodManager) commentEdit.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
 
 		mSwipeLayout.setOnRefreshListener(this);
@@ -166,11 +194,14 @@ public class MainActivity extends Activity implements OnClickListener ,SwipeRefr
 
 		button.setOnClickListener(this);
 		download.setOnClickListener(this);
-		
-//		adapter = new MyAdapter(friendList, this);
+
+		// adapter = new MyAdapter(friendList, this);
 		adapter = new MyItemAdapter(handler, friendList, this);
 		listview.setAdapter((ListAdapter) adapter);
 
+		dector = new GestureDetector(this);
+		listview.setOnTouchListener(this);
+		
 		EmotionInfo.emotionPath = localPath + "/emoticon/";
 		File emotionDataFile = new File(emotionDataPath);
 		if (emotionDataFile.exists()) {
@@ -180,22 +211,18 @@ public class MainActivity extends Activity implements OnClickListener ,SwipeRefr
 		}
 
 		/*************** 获取服务端数据 *************************/
-//		client = new DefaultHttpClient();
-		// HttpClient Get方法 得到网络数据
-//		readNet(TIMELINE_URL);
-		getTimeLineData(ON_REFERSH);	
-
+		getTimeLineData(ON_REFERSH);
 		System.out.println("onCreate end!");
 	}
 
 	private void initView() {
 		commentView = findViewById(R.id.comment_view);
-		commentEdit = (EditText) findViewById(R.id.comment_edit);
+		commentEdit = (IgnoreSoftKeyboardEditText) findViewById(R.id.comment_edit);
 		commentBtn = (Button) findViewById(R.id.comment_send);
 		mSwipeLayout = (RefreshLayout) findViewById(R.id.id_swipe_ly);
 		listview = (ListView) findViewById(R.id.lv);
-		button = (Button) findViewById(R.id.button1);
-		download = (Button) findViewById(R.id.download_btn);
+		button = (Button) header.findViewById(R.id.button1);
+		download = (Button) header.findViewById(R.id.download_btn);
 	}
 
 	public void onRefresh() {
@@ -272,50 +299,50 @@ public class MainActivity extends Activity implements OnClickListener ,SwipeRefr
 				// testText.setText(current + "/" + total);
 			}
 
-					@Override
-					public void onSuccess(ResponseInfo<String> responseInfo) {
-//						testText.setText(responseInfo.result);
-//						System.out.println(responseInfo.result);
-//						System.out.println("111111111111get time line success1111111111111111");
-						// 解析得到的 json 数据
-						if (flagPullOrRefersh == ON_LOAD) {
-							// 上拉加载
-							friendList.addAll(parseTimeLineJsonData(responseInfo.result));
-							mSwipeLayout.setLoading(false);
-							
-						} else if (flagPullOrRefersh == ON_REFERSH){
-							// 下拉刷新
-							friendList.clear();
-							friendList.addAll(parseTimeLineJsonData(responseInfo.result));
-							mSwipeLayout.setRefreshing(false);
-							
-						}
-						else {
-							System.out.println("Error input variable!!!");
-						}
-						System.out.println("+++++++++++++++++++++++" + pageNum);
-						
-						System.out.println(responseInfo.result);
-						pageNum++;
-						if (friendList != null) {
-							flagHasData = true;
-						}
-						adapter.notifyDataSetChanged();
-						
-					}
+			@Override
+			public void onSuccess(ResponseInfo<String> responseInfo) {
+				// testText.setText(responseInfo.result);
+				// System.out.println(responseInfo.result);
+				// System.out.println("111111111111get time line
+				// success1111111111111111");
+				// 解析得到的 json 数据
+				if (flagPullOrRefersh == ON_LOAD) {
+					// 上拉加载
+					friendList.addAll(parseTimeLineJsonData(responseInfo.result));
+					mSwipeLayout.setLoading(false);
 
-					@Override
-					public void onStart() {
-//						System.out.println("000000000000000000000000000000");
-//						testText.setText("start");
-					}
+				} else if (flagPullOrRefersh == ON_REFERSH) {
+					// 下拉刷新
+					friendList.clear();
+					friendList.addAll(parseTimeLineJsonData(responseInfo.result));
+					mSwipeLayout.setRefreshing(false);
 
-					@Override
-					public void onFailure(HttpException error, String msg) {
-//						System.out.println("2322222222222222222222222222222222");
-//						testText.setText("Fail");
-					}
-				});
+				} else {
+					System.out.println("Error input variable!!!");
+				}
+//				System.out.println("+++++++++++++++++++++++" + pageNum);
+
+//				System.out.println(responseInfo.result);
+				pageNum++;
+				if (friendList != null) {
+					flagHasData = true;
+				}
+				adapter.notifyDataSetChanged();
+
+			}
+
+			@Override
+			public void onStart() {
+				// System.out.println("000000000000000000000000000000");
+				// testText.setText("start");
+			}
+
+			@Override
+			public void onFailure(HttpException error, String msg) {
+				// System.out.println("2322222222222222222222222222222222");
+				// testText.setText("Fail");
+			}
+		});
 	}
 
 	/* 异步方式读取服务端数据 */
@@ -338,8 +365,8 @@ public class MainActivity extends Activity implements OnClickListener ,SwipeRefr
 //						friendList = getFriendsList(val);
 						friendList.clear();
 						friendList.addAll(getFriendsList(val));
-//						adapterFriendList = friendList;
-						System.out.println("***************** get new data!");
+						// adapterFriendList = friendList;
+//						System.out.println("***************** get new data!");
 						adapter.notifyDataSetChanged();
 						
 					} else if (urlStr.equals(EMOTION_URL)) {
@@ -404,7 +431,7 @@ public class MainActivity extends Activity implements OnClickListener ,SwipeRefr
 		List<FriendInfo> fList;
 		List<ImageInfo> iList;
 		JSONObject jsonObj;
-		System.out.println("getFriends start!");
+//		System.out.println("getFriends start!");
 		if (null == jsonStr)
 			return null;
 
@@ -415,7 +442,7 @@ public class MainActivity extends Activity implements OnClickListener ,SwipeRefr
 			String action = jsonObj.getString("action");
 
 			if (!action.equals("list_info_success")) {
-				System.out.println("Get Failure!!");
+//				System.out.println("Get Failure!!");
 				return null;
 			}
 			JSONArray friendsList = jsonObj.getJSONArray("value");
@@ -445,7 +472,7 @@ public class MainActivity extends Activity implements OnClickListener ,SwipeRefr
 						image.setUrl(imageItem.getString("url"));
 						image.setHeight(imageItem.getInt("height"));
 						image.setWidth(imageItem.getInt("width"));
-//						System.out.println(image.getUrl());
+						// System.out.println(image.getUrl());
 						iList.add(image);
 					}
 					friend.setImages(iList);
@@ -455,13 +482,15 @@ public class MainActivity extends Activity implements OnClickListener ,SwipeRefr
 		} catch (JSONException e) {
 			e.printStackTrace();
 		}
-//		System.out.println("----------------------" + fList.get(0).getImages().size());
+		// System.out.println("----------------------" +
+		// fList.get(0).getImages().size());
 		return fList;
 	}
 
 	
 	/**
 	 * 解析从服务得到的朋友圈信息
+	 * 
 	 * @param jsonData
 	 * @return
 	 */
@@ -470,7 +499,7 @@ public class MainActivity extends Activity implements OnClickListener ,SwipeRefr
 		List<FriendInfo> fList;
 		List<ImageInfo> iList;
 		JSONObject jsonObj;
-		System.out.println("-----------------------getFriends start!---------------------");
+//		System.out.println("-----------------------getFriends start!---------------------");
 		if (null == jsonData)
 			return null;
 
@@ -489,7 +518,7 @@ public class MainActivity extends Activity implements OnClickListener ,SwipeRefr
 			// System.out.println("friend count: " +
 			// friendsList.length());
 			for (int i = 0; i < friendsList.length(); ++i) {
-				System.out.println(">>>>>>>>>>>>>>>>>>>>>>>" + i + "th friend ");
+//				System.out.println(">>>>>>>>>>>>>>>>>>>>>>>" + i + "th friend ");
 				// 获取每一个朋友的json对象
 				JSONObject jsonItem = friendsList.getJSONObject(i);
 				FriendInfo friend = new FriendInfo();
@@ -511,14 +540,14 @@ public class MainActivity extends Activity implements OnClickListener ,SwipeRefr
 
 				if (0 != imagesList.length()) {
 					iList = new ArrayList<ImageInfo>();
-					System.out.println(" image count: " + imagesList.length());
+//					System.out.println(" image count: " + imagesList.length());
 					for (int j = 0; j < imagesList.length(); ++j) {
 						ImageInfo image = new ImageInfo();
 						JSONObject imageItem = imagesList.getJSONObject(j);
 						image.setUrl(imageItem.getString("url"));
 						image.setHeight(imageItem.getInt("height"));
 						image.setWidth(imageItem.getInt("width"));
-//						System.out.println(image.getUrl());
+						// System.out.println(image.getUrl());
 						iList.add(image);
 					}
 					friend.setImages(iList);
@@ -683,11 +712,6 @@ public class MainActivity extends Activity implements OnClickListener ,SwipeRefr
 			Intent it = new Intent();
 			it.setClass(MainActivity.this, PostActivity.class);
 
-			// Bundle bundle = new Bundle();
-			// bundle.putParcelableArrayList("emotionList", emotionList);
-			// it.putExtras(bundle);
-
-			// startActivity(it);
 			startActivityForResult(it, 100);
 			break;
 		case R.id.download_btn:
@@ -704,33 +728,90 @@ public class MainActivity extends Activity implements OnClickListener ,SwipeRefr
 	}
 
 	@Override
-	public void onLoad() {		
+	public void onLoad() {
 		// 读取下一页朋友圈数据
 		getTimeLineData(ON_LOAD);
-		
-	}
-	
-	private void showPopupWindow() {
-		popupView = LayoutInflater.from(this).inflate(R.layout.popup_window, null);
-//		popupView = View.inflate(this, R.layout.popup_window, null);
-		editComment = (EditText) popupView.findViewById(R.id.edit);
-		commentBtn = (Button) popupView.findViewById(R.id.send);
-		PopupWindow window = new PopupWindow(popupView, LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, true);
-		window.setTouchable(true);
 
-		window.setBackgroundDrawable(new BitmapDrawable());
-		backgroundAlpha(1f);
-
-//		window.showAsDropDown(listview);
-		int []location = new int[2];
-		listview.getLocationInWindow(location);
-		window.showAtLocation(listview, Gravity.NO_GRAVITY, 0, 400);
 	}
 
-	private void backgroundAlpha(float f) {
+	private float x1 = 0;
+	private float x2 = 0;
+	private float y1 = 0;
+	private float y2 = 0;
+	public static boolean bScrolling = false;
+	@Override
+	public boolean onTouchEvent(MotionEvent event) {
+
+		if (event.getAction() == MotionEvent.ACTION_UP) {
+			System.out.println("----------------action up--------------");
+			bScrolling = false;
+		}
+		return super.onTouchEvent(event);
+	}
+
+	@Override
+	public boolean onDown(MotionEvent e) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+
+	@Override
+	public void onLongPress(MotionEvent e) {
+		// TODO Auto-generated method stub
 		
-		WindowManager.LayoutParams lp = getWindow().getAttributes();
-		lp.alpha = f; // 0.0-1.0
-		getWindow().setAttributes(lp);
+	}
+
+	/* (non-Javadoc)
+	 * @see android.view.GestureDetector.OnGestureListener#onFling(android.view.MotionEvent, android.view.MotionEvent, float, float)
+	 * 滑动时，隐藏评论编辑区和输入法
+	 */
+	@Override
+	public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+		System.out.println("`````````````onFling`````````````````" + bInputVisiable);
+//		if (commentView.getVisibility() == View.VISIBLE) {
+//			commentView.setVisibility(View.INVISIBLE);
+//		}
+//		if (bInputVisiable == true) {
+//			inputManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);				
+//		}
+		bScrolling = false;
+		return false;
+	}
+	/* (non-Javadoc)
+	 * @see android.view.GestureDetector.OnGestureListener#onScroll(android.view.MotionEvent, android.view.MotionEvent, float, float)
+	 * 滑动时，隐藏评论编辑区和输入法
+	 */
+	@Override
+	public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+		System.out.println("`````````````onScroll`````````````````" + bInputVisiable);
+		if (commentView.getVisibility() == View.VISIBLE) {
+			commentView.setVisibility(View.INVISIBLE);
+		}
+		if (bInputVisiable == true && bScrolling  != true) {
+			inputManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
+			bScrolling = false;
+			bInputVisiable = false;
+		}
+		
+		return false;
+	}
+
+	@Override
+	public void onShowPress(MotionEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public boolean onSingleTapUp(MotionEvent e) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean onTouch(View v, MotionEvent event) {
+		dector.onTouchEvent(event);
+		return false;
 	}
 }
