@@ -12,8 +12,12 @@ import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.zlf.testdemo01.domain.FriendInfo;
 import com.zlf.testdemo01.domain.ImageInfo;
 
+import android.app.ActionBar.LayoutParams;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Vibrator;
@@ -21,11 +25,14 @@ import android.text.SpannableString;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.BaseAdapter;
-import android.widget.ImageButton;
+import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.PopupWindow;
 import android.widget.TextView;
 
 public class MyItemAdapter extends BaseAdapter{
@@ -34,6 +41,7 @@ public class MyItemAdapter extends BaseAdapter{
 	private Context context;
 	private ImageLoader imageLoader;
 	Handler handler;
+	private View v;
 	
 	public MyItemAdapter(List<FriendInfo> list, Context c) {
 		datas = list;
@@ -65,7 +73,7 @@ public class MyItemAdapter extends BaseAdapter{
 	}
 
 	@Override
-	public View getView(int position, View convertView, ViewGroup arg2) {
+	public View getView(final int position, View convertView, ViewGroup arg2) {
 		final ViewHolder holder;
 		DisplayImageOptions options;
 		final List<ImageInfo> images;
@@ -80,33 +88,28 @@ public class MyItemAdapter extends BaseAdapter{
 			holder.content = (TextView) convertView.findViewById(R.id.content);
 			holder.gridView = (NoScrollGridView) convertView.findViewById(R.id.gridview);
 			holder.time = (TextView) convertView.findViewById(R.id.insert_time);
-			holder.comment = (ImageView) convertView.findViewById(R.id.comment);
-//
-//			mCommentView = convertView.findViewById(R.id.comment_view);
-//			
+			holder.comment = (Button) convertView.findViewById(R.id.comment);
+
+			holder.commentView = convertView.findViewById(R.id.comment_view);
+			holder.commentBtn = (Button) convertView.findViewById(R.id.comment_button);
+			holder.praiseBtn = (Button) convertView.findViewById(R.id.praise_button);
+			holder.praiseText = (TextView) convertView.findViewById(R.id.praise_text);
 			
 			convertView.setTag(holder);			
 		} else {
 			holder = (ViewHolder) convertView.getTag();
 		}
-		// 设置焦点
-//		holder.comment.setFocusable(true);   
-//		holder.comment.setFocusableInTouchMode(true);   
-//		holder.comment.requestFocus(); 
+
+		holder.commentView.setVisibility(View.INVISIBLE);
 		
-		holder.comment.setOnClickListener(new OnClickListener() {
-			
-			@Override
-			public void onClick(View arg0) {
-				Vibrator vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
-				vibrator.vibrate(50);
-				
-				Message msg = new Message();
-				msg.what = 1;
-				handler.sendMessage(msg);
-			}
-		});
 		FriendInfo friend = datas.get(position);
+		friend.setVisibleFlag(false);
+		
+		if (friend.isbPraiseFlag()) {
+			holder.praiseBtn.setBackground(context.getDrawable(R.drawable.red_heart));
+		} else {
+			holder.praiseBtn.setBackground(context.getDrawable(R.drawable.icon_like));
+		}
 		holder.name.setText(friend.getName());
 
 		if (datas.get(position).getContent() != null) {
@@ -140,15 +143,90 @@ public class MyItemAdapter extends BaseAdapter{
 			holder.gridView.setAdapter(new NoScrollItemAdapter(images, context)); // 设置九宫格gridView的适配器
 			
 			holder.gridView.setOnItemClickListener(new OnItemClickListener() {
-
 				@Override
 				public void onItemClick(AdapterView<?> arg0, View view, int position, long id) {
 					imageBrowse(position, images);
 				}});
 		}
+		
+		holder.praiseBtn.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				Vibrator vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+				vibrator.vibrate(50);
+
+					String praise = holder.praiseText.getText().toString();
+					if (praise.equals("赞")) {
+						holder.praiseText.setText("取消");
+						
+						holder.praiseBtn.setBackground(context.getDrawable(R.drawable.red_heart));
+					} else {
+						holder.praiseText.setText("赞");
+						holder.praiseBtn.setBackground(context.getDrawable(R.drawable.icon_like));
+					}
+
+					holder.commentView.clearAnimation();
+					holder.commentView.setVisibility(View.GONE);
+			}
+		});
+		holder.commentBtn.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View arg0) {
+				Vibrator vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+				vibrator.vibrate(50);
+				
+				Message msg = new Message();
+				msg.what = 1;
+				handler.sendMessage(msg);
+				
+				holder.commentView.clearAnimation();
+				holder.commentView.setVisibility(View.GONE);
+			
+//				if (datas.get(position) == View.VISIBLE) {
+//					holder.praiseText.setText("取消");
+//					holder.commentView.setVisibility(View.INVISIBLE);
+//				}
+			
+				
+//				msg = new Message();
+//				msg.what = 3;
+//				msg.obj = holder.commentView;
+//				handler.sendMessage(msg);
+//				if (holder.commentView.getVisibility() == View.VISIBLE) {
+//					holder.commentView.setVisibility(View.INVISIBLE);
+//				}
+			}
+		});
+		holder.comment.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+//				holder.commentView.clearAnimation();
+//				Animation show = AnimationUtils.loadAnimation(context, R.anim.slide_show);
+//				Animation hide = AnimationUtils.loadAnimation(context, R.anim.slide_hide);
+//				if (holder.commentView.getVisibility() == View.VISIBLE) {
+//					holder.commentView.setAnimation(hide);
+//					holder.commentView.setVisibility(View.GONE);
+//				} else {
+//					holder.commentView.setAnimation(show);
+//					holder.commentView.setVisibility(View.VISIBLE);
+//				}
+				// 使用popupwindow实现点击按钮出现点赞和评论按钮布局
+				
+				Vibrator vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+				vibrator.vibrate(50);
+				
+				
+				Message msg = new Message();
+				msg.what = 4;
+				msg.arg1 = position;
+				msg.obj = holder.comment;
+				handler.sendMessage(msg);
+				
+			}
+		});
 		return convertView;
 	}
-	
+
 	/**
 	 * 跳转到ImagePagerActivity，显示图片详情
 	 * @param position
@@ -173,7 +251,12 @@ public class MyItemAdapter extends BaseAdapter{
 		private TextView content;
 		private NoScrollGridView gridView;
 		private TextView time;
-		private ImageView comment;
+		private Button comment;
+		
+		private View commentView;
+		private Button commentBtn;
+		private Button praiseBtn;
+		private TextView praiseText;
 //		private EditText commentEdit;
 	}
 }

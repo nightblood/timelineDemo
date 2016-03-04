@@ -30,9 +30,18 @@ public class IgnoreSoftKeyboardEditText extends EditText {
 		if (keyCode == KeyEvent.KEYCODE_BACK) {
 			Message msg = new Message();
 			msg.what = 2;
-			MainActivity.handler.sendMessage(msg);
+			((Handler) MainActivity.editTextHandler).sendMessage(msg);
 		}
 		return false;
 	}
+//	@Override
+//	public boolean dispatchKeyEvent(KeyEvent event) {
+//		if (KeyEvent.KEYCODE_BACK == event.getKeyCode()) {
+//			Message msg = new Message();
+//			msg.what = 2;
+//			((Handler) MainActivity.editTextHandler).sendMessage(msg);
+//		}
+//		return super.dispatchKeyEvent(event);
+//	}
 
 }

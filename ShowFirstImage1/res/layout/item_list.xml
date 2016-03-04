@@ -55,12 +55,45 @@
         android:layout_below="@id/gridview"
         android:text="insert_time" />
 
-    <ImageView
+    <Button
         android:id="@+id/comment"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="30dp"
+        android:layout_height="22dp"
         android:layout_alignParentRight="true"
         android:layout_below="@id/gridview"
         android:layout_marginLeft="5dp"
-        android:background="@drawable/comment_pressed" /> 
+        android:layout_marginTop="15dp"
+        android:background="@drawable/micro_comment" /> 
+        
+        <LinearLayout 
+            android:id="@+id/comment_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="#6699cc"
+            android:layout_toLeftOf="@id/comment"
+            android:layout_below="@id/gridview"
+            android:layout_marginTop="10dp"
+            android:gravity="center"
+            >
+            <Button 
+                android:id="@+id/praise_button"
+                android:layout_width="30dp"
+                android:layout_height="25dp"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="5dp"
+                android:background="@drawable/micro_comment_praise"
+                />
+            <TextView android:id="@+id/praise_text"
+                android:layout_width="40dp"
+                android:layout_height="17dp"
+                android:gravity="left"
+                android:text="赞"/>
+            <Button android:id="@+id/comment_button"
+                android:layout_width="30dp"
+                android:layout_height="25dp"
+                android:layout_marginLeft="15dp"
+                android:layout_marginRight="10dp"
+                android:background="@drawable/micro_comment_comment"/>
+        </LinearLayout>
 </RelativeLayout>

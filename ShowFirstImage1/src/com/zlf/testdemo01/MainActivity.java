@@ -12,6 +12,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Timer;
@@ -47,31 +48,29 @@ import android.graphics.drawable.BitmapDrawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Message;
+import android.os.Vibrator;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.util.Log;
 import android.view.GestureDetector;
-import android.view.GestureDetector.OnGestureListener;
-import android.view.Gravity;
 import android.view.KeyEvent;
-import android.view.LayoutInflater;
+import android.view.GestureDetector.OnGestureListener;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
-import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.AbsListView;
+import android.widget.AbsListView.OnScrollListener;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.ListAdapter;
 import android.widget.ListView;
-import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class MainActivity extends Activity
-		implements OnClickListener, SwipeRefreshLayout.OnRefreshListener, OnLoadListener,
-		OnGestureListener , OnTouchListener{
+public class MainActivity extends Activity implements OnClickListener, SwipeRefreshLayout.OnRefreshListener,
+		OnLoadListener, OnGestureListener, OnTouchListener {
 
 	private static String TIMELINE_URL = "http://client.e0575.com/quanzi/app.php?c=quanzi&a=mainlist";
 	private static String EMOTION_URL = "http://client.e0575.com/quanzi/app.php?c=quanzi&a=emoticon";
@@ -98,12 +97,35 @@ public class MainActivity extends Activity
 	public static boolean bInputVisiable = false;
 	private View popupView;
 	private EditText editComment;
+	// private ImageView commentBtn;
 	private Button commentBtn;
 	private static View commentView;
-//	private EditText commentEdit;
-	private static IgnoreSoftKeyboardEditText commentEdit;
+	// private EditText commentEdit;
+	private static EditText commentEdit;
 	private static InputMethodManager inputManager;
 	private GestureDetector dector;
+	public static boolean bScrolling = false;
+	public static View commentListView = null;
+	private MyPopupWindow window = null;
+	private static boolean popupIsShowing = false;
+	private Date preTime = null;
+	private Date currTime = null;
+	private static Date backTime = null;
+
+	public static Handler editTextHandler = new Handler() {
+		public void handleMessage(Message msg) {
+			if (msg.what == 2) {
+				// 处理点击返回键事件，隐藏EditText 和虚拟键盘
+				if (commentView.getVisibility() == View.VISIBLE) {
+					commentView.setVisibility(View.INVISIBLE);
+					backTime = new Date(System.currentTimeMillis());
+				}
+
+//				if (bInputVisiable == true)
+//					inputManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
+			}
+		}
+	};
 
 	private Handler refreshHandler = new Handler() {
 		public void handleMessage(android.os.Message msg) {
@@ -117,23 +139,10 @@ public class MainActivity extends Activity
 		};
 	};
 	private View header;
-	public static Handler handler = new Handler() {
+	public Handler handler = new Handler() {
 		public void handleMessage(android.os.Message msg) {
 			if (msg.what == 1) {
-				// 1.use PoupWindow realize Comment Function
-				// showPopupWindow();
-				// Timer timer = new Timer();
-				// timer.schedule(new TimerTask() {
-				// public void run() {
-				// InputMethodManager inputManager = (InputMethodManager)
-				// editComment.getContext()
-				// .getSystemService(Context.INPUT_METHOD_SERVICE);
-				// inputManager.showSoftInput(editComment, 0);
-				// }
-				// }, 50);
-
-				// 2.
-
+				// 处理点击发表评论按钮事务
 				if (commentView.getVisibility() != View.VISIBLE) {
 					commentView.setVisibility(View.VISIBLE);
 
@@ -150,10 +159,8 @@ public class MainActivity extends Activity
 								inputManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
 							}
 						}, 50);
-						
 					}
 					// 调整 listview中item的位置，使其在编辑框的上方。
-					
 				} else {
 					// 点击评论按钮已经显示编辑区的情况下，隐藏评论编辑区并且隐藏虚拟键盘
 					commentView.setVisibility(View.INVISIBLE);
@@ -162,14 +169,101 @@ public class MainActivity extends Activity
 				}
 			} else if (msg.what == 2) {
 				// 处理点击返回键事件，隐藏EditText 和虚拟键盘
-				if (commentView.getVisibility() == View.VISIBLE) 
+				if (commentView.getVisibility() == View.VISIBLE)
 					commentView.setVisibility(View.INVISIBLE);
-				
+
 				if (bInputVisiable == true)
 					inputManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
+			} else if (msg.what == 3) {
+				View view = (View) msg.obj;
+				if (view.getVisibility() == View.VISIBLE) {
+					view.setVisibility(View.INVISIBLE);
+				}
+			} else if (msg.what == 4) {
+				showPopupWindow(msg);
 			}
-			
-		};
+		}
+
+	};
+	private TextView praiseText = null;
+	private Button praiseBtn = null;
+	private FriendInfo friend = null;
+
+	private void showPopupWindow(Message msg) {
+
+		friend = friendList.get(msg.arg1);
+		if (window == null) {
+			View view = View.inflate(MainActivity.this, R.layout.popup_window_comment, null);
+			praiseText = (TextView) view.findViewById(R.id.praise_text);
+			praiseBtn = (Button) view.findViewById(R.id.praise_button);
+			Button commentBtn = (Button) view.findViewById(R.id.comment_button);
+
+			praiseBtn.setOnClickListener(new OnClickListener() {
+
+				@Override
+				public void onClick(View v) {
+
+					Vibrator vibrator = (Vibrator) MainActivity.this.getSystemService(Context.VIBRATOR_SERVICE);
+					vibrator.vibrate(50);
+
+					String praise = praiseText.getText().toString();
+					if (praise.equals("赞")) {
+						friend.setPraiseFlag(true);
+						praiseText.setText("取消");
+						praiseBtn.setBackground(MainActivity.this.getDrawable(R.drawable.red_heart));
+						Toast.makeText(MainActivity.this, "已点赞", Toast.LENGTH_SHORT).show();
+					} else {
+						friend.setPraiseFlag(false);
+						praiseText.setText("赞");
+						praiseBtn.setBackground(MainActivity.this.getDrawable(R.drawable.icon_like));
+						Toast.makeText(MainActivity.this, "已取消点赞", Toast.LENGTH_SHORT).show();
+					}
+					window.dismiss();
+				}
+			});
+
+			commentBtn.setOnClickListener(new OnClickListener() {
+
+				@Override
+				public void onClick(View v) {
+					Message msg = new Message();
+					msg.what = 1;
+					handler.sendMessage(msg);
+					window.dismiss();
+				}
+			});
+
+			window = new MyPopupWindow(view, LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+
+			// 需要设置背景，用物理键返回的时候
+			window.setBackgroundDrawable(new BitmapDrawable(MainActivity.this.getResources()));
+
+			window.setFocusable(false);
+			window.setTouchable(true);
+			window.setOutsideTouchable(true);
+
+			view.setOnTouchListener(new OnTouchListener() {// 需要设置，点击之后取消popupview，即使点击外面，也可以捕获事件
+															// {
+				public boolean onTouch(View v, MotionEvent event) {
+					if (window.isShowing()) {
+						window.dismiss();
+					}
+					return false;
+				}
+			});
+		}
+		if (window.isShowing()) {
+			window.dismiss();
+		} else {
+			if (friend.isbPraiseFlag()) {
+				praiseText.setText("取消");
+				praiseBtn.setBackgroundResource(R.drawable.red_heart);
+			} else {
+				praiseText.setText("赞");
+				praiseBtn.setBackgroundResource(R.drawable.icon_like);
+			}
+			window.showAsDropDown((View) msg.obj, -600, -100);
+		}
 	};
 
 	@Override
@@ -217,7 +311,8 @@ public class MainActivity extends Activity
 
 	private void initView() {
 		commentView = findViewById(R.id.comment_view);
-		commentEdit = (IgnoreSoftKeyboardEditText) findViewById(R.id.comment_edit);
+//		commentEdit = (IgnoreSoftKeyboardEditText) findViewById(R.id.comment_edit);
+		commentEdit = (EditText) findViewById(R.id.comment_edit);
 		commentBtn = (Button) findViewById(R.id.comment_send);
 		mSwipeLayout = (RefreshLayout) findViewById(R.id.id_swipe_ly);
 		listview = (ListView) findViewById(R.id.lv);
@@ -477,6 +572,11 @@ public class MainActivity extends Activity
 					}
 					friend.setImages(iList);
 				}
+				// TODO: 添加评论，以及本人是否已经点赞
+				friend.setComments(null);
+				friend.setPraiseFlag(false);
+				friend.setVisibleFlag(false);
+
 				fList.add(friend);
 			}
 		} catch (JSONException e) {
@@ -734,11 +834,6 @@ public class MainActivity extends Activity
 
 	}
 
-	private float x1 = 0;
-	private float x2 = 0;
-	private float y1 = 0;
-	private float y2 = 0;
-	public static boolean bScrolling = false;
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
 
@@ -784,7 +879,11 @@ public class MainActivity extends Activity
 	 */
 	@Override
 	public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-		System.out.println("`````````````onScroll`````````````````" + bInputVisiable);
+		System.out.println("`````````````onScroll`````````````````");
+		// if (commentListView != null && commentListView.getVisibility() ==
+		// View.VISIBLE) {
+		// commentListView.setVisibility(View.INVISIBLE);
+		// }
 		if (commentView.getVisibility() == View.VISIBLE) {
 			commentView.setVisibility(View.INVISIBLE);
 		}
@@ -813,5 +912,39 @@ public class MainActivity extends Activity
 	public boolean onTouch(View v, MotionEvent event) {
 		dector.onTouchEvent(event);
 		return false;
+	}
+
+	@Override
+	protected void onResume() {
+
+		super.onResume();
+	}
+
+	@Override
+	protected void onStart() {
+
+		super.onStart();
+	}
+
+	@Override
+	protected void onStop() {
+		pageNum = 1;
+		super.onStop();
+	}
+
+	@Override
+	public boolean onKeyDown(int keyCode, KeyEvent event) {
+		if (KeyEvent.KEYCODE_BACK == keyCode) {
+			if (commentView.getVisibility() == View.VISIBLE) {
+				commentView.setVisibility(View.INVISIBLE);
+				System.out.println("11111111111111111111111111111111111111");
+				return true;
+			}
+			Date time = new Date(System.currentTimeMillis());
+			if (time.getTime() - backTime.getTime() < 100) {
+				return true;
+			}
+		}
+		return super.onKeyDown(keyCode, event);
 	}
 }
