@@ -46,12 +46,7 @@ public class MyAdapter extends BaseAdapter {
 
 	@Override
 	public void notifyDataSetChanged() {
-		// TODO Auto-generated method stub
-		// System.out.println("----------------ddddd"+friendsList+"
-		// mm"+friendsList.size());
 		super.notifyDataSetChanged();
-		// System.out.println("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-		// notifyDataSetChanged");
 	}
 
 	@Override

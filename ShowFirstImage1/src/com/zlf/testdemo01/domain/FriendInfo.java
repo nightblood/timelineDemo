@@ -22,6 +22,9 @@ public class FriendInfo {
 	
 	private ArrayList<Comment> comments = new ArrayList<Comment>();
 	
+	private boolean bPraiseFlag;
+	private boolean visibleFlag;
+	
 	public int getId() {
 		return id;
 	}
@@ -88,5 +91,17 @@ public class FriendInfo {
 	}
 	public void setComments(ArrayList<Comment> comments) {
 		this.comments = comments;
+	}
+	public boolean isbPraiseFlag() {
+		return bPraiseFlag;
+	}
+	public void setPraiseFlag(boolean bPraiseFlag) {
+		this.bPraiseFlag = bPraiseFlag;
+	}
+	public boolean isVisibleFlag() {
+		return visibleFlag;
+	}
+	public void setVisibleFlag(boolean visibleFlag) {
+		this.visibleFlag = visibleFlag;
 	}
 }
