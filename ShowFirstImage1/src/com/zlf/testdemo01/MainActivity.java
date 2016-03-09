@@ -22,6 +22,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Vibrator;
+import android.support.v4.view.ViewPager;
+import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.view.GestureDetector;
 import android.view.GestureDetector.OnGestureListener;
@@ -33,13 +35,15 @@ import android.view.View.OnTouchListener;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 public class MainActivity extends Activity implements OnClickListener, SwipeRefreshLayout.OnRefreshListener,
-		OnLoadListener, OnGestureListener, OnTouchListener {
+		OnLoadListener, OnGestureListener, OnTouchListener, OnPageChangeListener {
 
 	
 //	private HttpClient client;
@@ -83,6 +87,19 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 	
 	private FriendOper friendUtils = null;
 	
+	private View header;
+	private TextView praiseText = null;
+	private Button praiseBtn = null;
+	private FriendInfo friend = null;
+	private ViewPager viewPager;
+	private ViewPagerAdapter viewAdapter;
+	
+	private BottomViewItem item;
+	private ArrayList<View> mViewItems = new ArrayList<View>();
+	private final int TIMELINE_ID = 2;
+	private boolean onLoadedFlag = false;
+	private boolean firstClickFlag = false;
+	
 
 	public static Handler editTextHandler = new Handler() {
 		public void handleMessage(Message msg) {
@@ -98,8 +115,6 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 			}
 		}
 	};
-	
-	
 
 	private Handler refreshHandler = new Handler() {
 		public void handleMessage(android.os.Message msg) {
@@ -112,7 +127,6 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 			}
 		};
 	};
-	private View header;
 	public Handler handler = new Handler() {
 		public void handleMessage(android.os.Message msg) {
 			switch (msg.what) {
@@ -179,9 +193,6 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 		}
 
 	};
-	private TextView praiseText = null;
-	private Button praiseBtn = null;
-	private FriendInfo friend = null;
 
 	private void showPopupWindow(Message msg) {
 
@@ -265,56 +276,50 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 
-		header = View.inflate(this, R.layout.listview_header, null);
-		initView();
-
-		//header.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
-		listview.addHeaderView(header);
+		item = BottomViewItem.getInstance();
 		
-		inputManager = (InputMethodManager) commentEdit.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+		initView();		
 
-		mSwipeLayout.setOnRefreshListener(this);
-		mSwipeLayout.setOnLoadListener(this);
-
-		localPath = getApplicationContext().getFilesDir().getAbsolutePath();
-		emotionPath = localPath + "/emotion.zip";
-		emotionDataPath = localPath + "/emotion.txt";
-
-		button.setOnClickListener(this);
-		download.setOnClickListener(this);
-
-		// adapter = new MyAdapter(friendList, this);
-		adapter = new MyItemAdapter(handler, friendList, this);
-		listview.setAdapter((ListAdapter) adapter);
-
-		dector = new GestureDetector(this);
-		listview.setOnTouchListener(this);
-		
-		friendUtils = new FriendOper(this, handler, adapter);
-
-		EmotionInfo.emotionPath = localPath + "/emoticon/";
-		File emotionDataFile = new File(emotionDataPath);
-		if (emotionDataFile.exists()) {
-			// 解析表情包数据
-			String emotionData = FileUtils.readFileByChars(localPath + "/emotion.txt");
-			friendUtils.getEmotionList(emotionData);
-		}
-
-		/*************** 获取服务端数据 *************************/
-		friendUtils.getTimeLineData(ON_REFERSH);
+		setTabSelection(0);
 		System.out.println("onCreate end!");
 	}
 
 	private void initView() {
-		commentView = findViewById(R.id.comment_view);
+		
+		viewPager = (ViewPager) findViewById(R.id.main_viewpager);
+		for (int i = 0; i < item.viewNum; i++) {
+			if (i != TIMELINE_ID) {
+				mViewItems.add(getLayoutInflater().inflate(item.layouts_id[i], null));				
+			} else {
+				mViewItems.add(getLayoutInflater().inflate(R.layout.listview, null));
+			}
+		}
+		viewAdapter = new ViewPagerAdapter(this, mViewItems);
+		viewPager.setAdapter(viewAdapter);
+		viewPager.setOnPageChangeListener(this);
+		for (int i = 0; i < item.viewNum; i++) {
+			item.linears[i] = (LinearLayout) findViewById(item.linears_id[i]);
+			item.linears[i].setOnClickListener(this);
+			item.images[i] = (ImageView) findViewById(item.images_id[i]);
+			item.texts[i] = (TextView) findViewById(item.texts_id[i]);
+		}		
+	}
+
+	private void initTimeLineView() {
+		View timeline = mViewItems.get(TIMELINE_ID);
+		header = View.inflate(this, R.layout.listview_header, null);
+		commentView = timeline.findViewById(R.id.comment_view);
 //		commentEdit = (IgnoreSoftKeyboardEditText) findViewById(R.id.comment_edit);
-		commentEdit = (EditText) findViewById(R.id.comment_edit);
-		commentBtn = (Button) findViewById(R.id.comment_send);
-		mSwipeLayout = (RefreshLayout) findViewById(R.id.id_swipe_ly);
-//		mSwipeLayout = (PullToRefreshListView) findViewById(R.id.id_swipe_ly);
-		listview = (ListView) findViewById(R.id.lv);
+		commentEdit = (EditText) timeline.findViewById(R.id.comment_edit);
+		commentBtn = (Button) timeline.findViewById(R.id.comment_send);
+		mSwipeLayout = (RefreshLayout) timeline.findViewById(R.id.id_swipe_ly);
+		listview = (ListView) timeline.findViewById(R.id.lv);
 		button = (Button) header.findViewById(R.id.button1);
 		download = (Button) header.findViewById(R.id.download_btn);
+		
+		listview.addHeaderView(header);
+		
+		
 	}
 
 	public void onRefresh() {
@@ -330,6 +335,7 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 	
 	@Override
 	public void onClick(View v) {
+		int viewPagerId = 5;
 		switch (v.getId()) {
 		case R.id.button1:
 			Intent it = new Intent();
@@ -345,8 +351,34 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 				friendUtils.readNet(FriendOper.EMOTION_URL);
 			}
 			break;
+		case R.id.message_layout:
+			viewPagerId = 0;
+			break;
+		case R.id.contacts_layout:  
+			viewPagerId = 1;
+			break;
+		case R.id.news_layout:
+			if (firstClickFlag == true) {
+				listview.setSelection(0);
+				listview.setSelectionAfterHeaderView();
+				listview.smoothScrollToPosition(0);
+			}
+			viewPagerId = 2;
+			break;
+		case R.id.setting_layout:
+			viewPagerId = 3;
+			break;
 		default:
 			break;
+		}
+		if (viewPagerId != 5) {
+			viewPager.setCurrentItem(viewPagerId);
+			setTabSelection(viewPagerId);
+			if (viewPagerId != TIMELINE_ID) {
+				firstClickFlag = false;				
+			} else {
+				firstClickFlag = true;
+			}
 		}
 	}
 
@@ -373,7 +405,7 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 	}
 
 	/*
-	 * MotionEvent, android.view.MotionEvent, float, float) 滑动时，隐藏评论编辑区和输入法
+	 * 滑动时，隐藏评论编辑区和输入法
 	 */
 	@Override
 	public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
@@ -383,7 +415,7 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 	}
 
 	/*
-	 * MotionEvent, android.view.MotionEvent, float, float) 滑动时，隐藏评论编辑区和输入法
+	 *  滑动时，隐藏评论编辑区和输入法
 	 */
 	@Override
 	public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
@@ -457,4 +489,69 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 		}
 		return super.onKeyDown(keyCode, event);
 	}
+
+	@Override
+	public void onPageScrollStateChanged(int arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onPageScrolled(int arg0, float arg1, int arg2) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onPageSelected(int arg0) {
+		setTabSelection(arg0);
+		if (arg0 == TIMELINE_ID && onLoadedFlag == false) {
+			onLoadedFlag = true;
+			initTimeLineView();
+			
+			inputManager = (InputMethodManager) commentEdit.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+
+			mSwipeLayout.setOnRefreshListener(this);
+			mSwipeLayout.setOnLoadListener(this);
+			
+			localPath = getApplicationContext().getFilesDir().getAbsolutePath();
+			emotionPath = localPath + "/emotion.zip";
+			emotionDataPath = localPath + "/emotion.txt";
+
+			button.setOnClickListener(this);
+			download.setOnClickListener(this);
+
+			adapter = new MyItemAdapter(handler, friendList, this);
+			listview.setAdapter((ListAdapter) adapter);
+
+			dector = new GestureDetector(this);
+			listview.setOnTouchListener(this);
+			
+			friendUtils = new FriendOper(this, handler, adapter);
+
+			EmotionInfo.emotionPath = localPath + "/emoticon/";
+			File emotionDataFile = new File(emotionDataPath);
+			if (emotionDataFile.exists()) {
+				// 解析表情包数据
+				String emotionData = FileUtils.readFileByChars(localPath + "/emotion.txt");
+				friendUtils.getEmotionList(emotionData);
+			}
+
+			friendUtils.getTimeLineData(ON_REFERSH);
+		}
+	}
+
+	private void setTabSelection(int arg0) {
+		clearSelection();
+		item.images[arg0].setImageResource(item.images_selected[arg0]);
+		item.texts[arg0].setTextColor(getResources().getColor(R.color.bottom_text_selected));
+	}
+
+	private void clearSelection() {
+		for (int i = 0; i < item.viewNum; i++) {
+			item.images[i].setImageResource(item.images_unselected[i]);
+			item.texts[i].setTextColor(getResources().getColor(R.color.bottom_text_unselected));
+		}	
+	}
+	
 }
