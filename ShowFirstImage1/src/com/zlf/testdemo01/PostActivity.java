@@ -4,20 +4,18 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.lidroid.xutils.HttpUtils;
-import com.lidroid.xutils.exception.HttpException;
 import com.lidroid.xutils.http.RequestParams;
 import com.lidroid.xutils.http.ResponseInfo;
 import com.lidroid.xutils.http.callback.RequestCallBack;
 import com.lidroid.xutils.http.client.HttpRequest;
 import com.zlf.testdemo01.domain.EmotionInfo;
 
-import android.R.drawable;
+import android.app.ActionBar.LayoutParams;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.AlertDialog.Builder;
@@ -53,7 +51,6 @@ import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
-import android.widget.RelativeLayout.LayoutParams;
 import android.widget.SimpleAdapter;
 import android.widget.SimpleAdapter.ViewBinder;
 import android.widget.Toast;
@@ -73,7 +70,8 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 	private Button buttonCancle;
 	private EditText content;
 	private final int IMAGE_OPEN = 1; // 打开图片标记
-	private String pathImage; // 选择图片路径
+	private List<String> pathImage = new ArrayList<String>();
+	// private List<String> pathImage = ArrayList<String>; // 选择图片路径
 	private Bitmap bmp; // 导入临时图片
 	private ArrayList<HashMap<String, Object>> imageItem;
 	private SimpleAdapter simpleAdapter; // 适配器
@@ -85,13 +83,16 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 	private GridView gv;
 	private List<View> views;
 	private int pageNum = 0;
-//	private static Map mapImageCached; // 缓存要上传图片
+	public static String KEY_TO_SHOW_PICTURES_ACTIVITY = "CAN_SELECTED_PICTURE_COUNT";
+
+	public static final int SHOW_PICTURE_CODE = 0x01;
+	// private static Map mapImageCached; // 缓存要上传图片
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-//		mapImageCached = new HashMap();
+		// mapImageCached = new HashMap();
 		imageFiles = new ArrayList<File>();
 		/*
 		 * 防止键盘挡住输入框 不希望遮挡设置activity属性 android:windowSoftInputMode="adjustPan"
@@ -104,7 +105,7 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 
 		initView();
 
-		if (emotionList != null) 
+		if (emotionList != null)
 			initPageView();
 
 		buttonPublish.setOnClickListener(new OnClickListener() {
@@ -121,23 +122,24 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 				Bitmap bitmap;
 				String fileName;
 				if (0 != imageItem.size() - 1) {
-//					System.out.println("=================要上传" + imageFiles.size() + " 张照片");
+					// System.out.println("=================要上传" +
+					// imageFiles.size() + " 张照片");
 					for (int i = 0; i < imageFiles.size(); ++i) {
 						// 上传所有图片，判断图片是否需要裁剪。
 						if (imageFiles.get(i).length() > 2048) {
 							// 1.本地创建一个新的被裁剪过的图片文件
 							// TODO 可以把缓存图片放在朋友圈缓存图片文件中，当刷新时可以从缓存中取。
-							//这种场景首先要保证是自己的状态才可以取本地缓存（这时缓存图片没有url等网络信息，也不需要这些信息），
-							//如果不是自己的状态则必须要匹配缓存图片和更新的图片信息一致才可以加载缓存图片。
-							bitmap = ImageUtils.compressImageFromFile(imageFiles.get(i).getAbsolutePath());
-							
-							fileName = ImageUtils.bitmap2file(bitmap, imageFiles.get(i).getName());
-							
+							// 这种场景首先要保证是自己的状态才可以取本地缓存（这时缓存图片没有url等网络信息，也不需要这些信息），
+							// 如果不是自己的状态则必须要匹配缓存图片和更新的图片信息一致才可以加载缓存图片。
+//							bitmap = ImageUtils.compressImageFromFile(imageFiles.get(i).getAbsolutePath());
+							bitmap = ImageUtils.getSmallBitmap(imageFiles.get(i).getAbsolutePath());
+							fileName = ImageUtils.bitmap2file(ImageUtils.rotateBitmap(bitmap, 
+									ImageUtils.readPictureDegree(imageFiles.get(i).getAbsolutePath())), 
+									imageFiles.get(i).getName());
+
 							File file = new File(fileName);
 							if (file != null)
 								params.addBodyParameter("file" + i, file);
-							System.out.println("before compress: " + imageFiles.get(i).getAbsolutePath() + " size: " + imageFiles.get(i).length() + ".................. after compress"
-								+ fileName + " size: " + file.length());
 						} else {
 							params.addBodyParameter("file" + i, imageFiles.get(i));
 							
@@ -173,7 +175,6 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 		simpleAdapter.setViewBinder(new ViewBinder() {
 			@Override
 			public boolean setViewValue(View view, Object data, String textRepresentation) {
-				// TODO Auto-generated method stub
 				if (view instanceof ImageView && data instanceof Bitmap) {
 					ImageView i = (ImageView) view;
 					i.setImageBitmap((Bitmap) data);
@@ -190,17 +191,24 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 		gridView1.setOnItemClickListener(new OnItemClickListener() {
 			@Override
 			public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
-				if (imageItem.size() == 10) {
-					// 第一张为默认图片（加号图片）
-					Toast.makeText(PostActivity.this, "图片数9张已满", Toast.LENGTH_SHORT).show();
-				} else if (position == 0) {
-					// 点击第0张图片（加号图片），访问相册。
-					Toast.makeText(PostActivity.this, "添加图片", Toast.LENGTH_SHORT).show();
-					// 选择图片
-					Intent intent = new Intent(Intent.ACTION_PICK,
-							android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-					startActivityForResult(intent, IMAGE_OPEN);
-					// 通过onResume()刷新数据
+				
+				 if (position == 0) {
+					// // 点击第0张图片（加号图片），访问相册。
+					// Toast.makeText(PostActivity.this, "添加图片",
+					// Toast.LENGTH_SHORT).show();
+					// // 选择图片
+					// Intent intent = new Intent(Intent.ACTION_PICK,
+					// android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+					// startActivityForResult(intent, IMAGE_OPEN);
+					// // 通过onResume()刷新数据
+					if (imageItem.size() == 10) {
+						Toast.makeText(PostActivity.this, "图片数9张已满!", Toast.LENGTH_SHORT).show();
+						return;
+					}
+					Intent intent = new Intent();
+					intent.setClass(PostActivity.this, ShowPicturesActivity.class);
+					intent.putExtra(KEY_TO_SHOW_PICTURES_ACTIVITY , 10 - imageItem.size());
+					startActivityForResult(intent, SHOW_PICTURE_CODE);
 				} else {
 					// 提示是否移除添加好的图片
 					dialog(position);
@@ -246,7 +254,9 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 			view = new GridView(this);
 			// list = new ArrayList<EmotionInfo>();
 
-			adapter = new MyEmojiAdapter(this, emotionList.subList(start, end)); // (0,21) (21,42) (42,50)
+			adapter = new MyEmojiAdapter(this, emotionList.subList(start, end)); // (0,21)
+																					// (21,42)
+																					// (42,50)
 
 			start += 21;
 			end = ((end + 21) > emotionList.size()) ? emotionList.size() : end + 21;
@@ -265,7 +275,7 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 			view.setOnItemClickListener(this);
 
 			views.add(view);
-			//viewPager.addView(view);
+			// viewPager.addView(view);
 		}
 		viewPager.setAdapter(new MyEmojiViewPagerAdapter(views));
 		viewPager.setCurrentItem(0);
@@ -291,58 +301,81 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 	// 获取图片路径 响应startActivityForResult
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		super.onActivityResult(requestCode, resultCode, data);
-		// 打开图片
-		if (resultCode == RESULT_OK && requestCode == IMAGE_OPEN) {
-			Uri uri = data.getData();
-			 
-			if (!TextUtils.isEmpty(uri.getAuthority())) {
-				System.out.println("-------要上传的图片------------->" + uri);
-				// 查询选择图片
-				Cursor cursor = getContentResolver().query(uri, new String[] { MediaStore.Images.Media.DATA }, null,
-						null, null);
-				// 返回 没找到选择图片
-				if (null == cursor) {
-					return;
-				}
-				// 光标移动至开头 获取图片路径
-				cursor.moveToFirst();
-				pathImage = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA));
-				File f = new File(pathImage);
-				imageFiles.add(f);
-				
+
+		if (requestCode == SHOW_PICTURE_CODE && resultCode == ShowPicturesActivity.RETURN_CODE) {
+			System.out.println("得到返回的结果");
+			Bundle bundle = data.getExtras();
+			pathImage = new ArrayList<String>();
+			pathImage.addAll((List<String>) bundle.get("pictures"));
+
+			for (int i = 0; i < pathImage.size(); ++i) {
+				System.out.println(pathImage.get(i));
+				imageFiles.add(new File(pathImage.get(i)));
 			}
-		} // end if 打开图片
+		}
+
+		// 打开图片
+		// if (resultCode == RESULT_OK && requestCode == IMAGE_OPEN) {
+		// Uri uri = data.getData();
+		//
+		// if (!TextUtils.isEmpty(uri.getAuthority())) {
+		// System.out.println("-------要上传的图片------------->" + uri);
+		// // 查询选择图片
+		// Cursor cursor = getContentResolver().query(uri, new String[] {
+		// MediaStore.Images.Media.DATA }, null,
+		// null, null);
+		// // 返回 没找到选择图片
+		// if (null == cursor) {
+		// return;
+		// }
+		// // 光标移动至开头 获取图片路径
+		// cursor.moveToFirst();
+		// pathImage =
+		// cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA));
+		// File f = new File(pathImage);
+		// imageFiles.add(f);
+		//
+		// }
+		// } // end if 打开图片
+
 	}
 
 	// 刷新图片
 	@Override
 	protected void onResume() {
 		super.onResume();
-		if (!TextUtils.isEmpty(pathImage)) {
-			Bitmap addbmp = ImageUtils.comp(BitmapFactory.decodeFile(pathImage));
-			
-			HashMap<String, Object> map = new HashMap<String, Object>();
-			map.put("itemImage", addbmp);
-			imageItem.add(map);
-			simpleAdapter = new SimpleAdapter(this, imageItem, R.layout.griditem_addpic, new String[] { "itemImage" },
-					new int[] { R.id.imageView1 });
-			simpleAdapter.setViewBinder(new ViewBinder() {
-				@Override
-				public boolean setViewValue(View view, Object data, String textRepresentation) {
-					
-					if (view instanceof ImageView && data instanceof Bitmap) {
-						ImageView i = (ImageView) view;
-						i.setImageBitmap((Bitmap) data);
-						return true;
-					}
-					return false;
-				}
-			});
-			gridView1.setAdapter(simpleAdapter);
-			simpleAdapter.notifyDataSetChanged();
-			// 刷新后释放防止手机休眠后自动添加
-			pathImage = null;
+		if (pathImage == null) {
+			return;
 		}
+		Bitmap addbmp;
+		for (int i = 0; i < pathImage.size(); ++i) {
+			if (!TextUtils.isEmpty(pathImage.get(i))) {
+//				addbmp = ImageUtils.comp(BitmapFactory.decodeFile(pathImage.get(i)));
+				addbmp = ImageUtils.getSmallBitmap(pathImage.get(i));
+				HashMap<String, Object> map = new HashMap<String, Object>();
+				map.put("itemImage", ImageUtils.rotateBitmap(addbmp, ImageUtils.readPictureDegree(pathImage.get(i))));
+				imageItem.add(map);
+			}
+		}
+		simpleAdapter = new SimpleAdapter(this, imageItem, R.layout.griditem_addpic, new String[] { "itemImage" },
+				new int[] { R.id.imageView1 });
+		simpleAdapter.setViewBinder(new ViewBinder() {
+			@Override
+			public boolean setViewValue(View view, Object data, String textRepresentation) {
+				
+				if (view instanceof ImageView && data instanceof Bitmap) {
+					ImageView i = (ImageView) view;
+					i.setImageBitmap((Bitmap) data);
+					return true;
+				}
+				return false;
+			}
+		});
+		gridView1.setAdapter(simpleAdapter);
+		simpleAdapter.notifyDataSetChanged();
+		// 刷新后释放防止手机休眠后自动添加
+		pathImage = null;
+
 	}
 
 	/*
@@ -408,8 +441,9 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 			}
 
 			@Override
-			public void onFailure(HttpException error, String msg) {
-				Toast.makeText(PostActivity.this, "Post fail : " + msg, Toast.LENGTH_SHORT).show();
+			public void onFailure(com.lidroid.xutils.exception.HttpException error, String msg) {
+				// TODO Auto-generated method stub
+
 			}
 		});
 	}
@@ -461,8 +495,9 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 		
 		Bitmap bitmap = BitmapFactory.decodeFile(localPath + "/emoticon/" + imageName);
 
-		bitmap = Bitmap.createScaledBitmap(bitmap, EmotionUtils.dip2px(context, 25), EmotionUtils.dip2px(context, 25), true);
-//		bitmap = Bitmap.createScaledBitmap(bitmap, 35, 35, true);
+		bitmap = Bitmap.createScaledBitmap(bitmap, EmotionUtils.dip2px(context, 25), EmotionUtils.dip2px(context, 25),
+				true);
+		// bitmap = Bitmap.createScaledBitmap(bitmap, 35, 35, true);
 		Drawable drawable = new BitmapDrawable(bitmap);
 		drawable.setBounds(0, 0, EmotionUtils.dip2px(context, 25), EmotionUtils.dip2px(context, 25));
 		ImageSpan imageSpan = new ImageSpan(drawable);

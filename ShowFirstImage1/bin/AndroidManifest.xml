@@ -38,6 +38,8 @@
             </intent-filter>
         </activity>
         <activity android:name=".ImagePagerActivity"></activity>
+        <activity android:name=".ShowPicturesActivity"
+            android:theme="@android:style/Theme.NoTitleBar"></activity>
     </application>
 
 </manifest>

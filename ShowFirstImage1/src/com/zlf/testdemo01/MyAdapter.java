@@ -7,7 +7,6 @@ import com.zlf.testdemo01.domain.FriendInfo;
 import com.zlf.testdemo01.domain.ImageInfo;
 
 import android.content.Context;
-import android.os.Handler;
 import android.text.SpannableString;
 import android.view.LayoutInflater;
 import android.view.View;
