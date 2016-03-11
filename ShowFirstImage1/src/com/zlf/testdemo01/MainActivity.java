@@ -45,7 +45,7 @@ import android.widget.Toast;
 public class MainActivity extends Activity implements OnClickListener, SwipeRefreshLayout.OnRefreshListener,
 		OnLoadListener, OnGestureListener, OnTouchListener, OnPageChangeListener {
 
-	
+	private final static int DELAY_TIME = 200;
 //	private HttpClient client;
 	public static List<FriendInfo> friendList = new ArrayList<FriendInfo>();
 	// private List<EmotionInfo> emotionList;
@@ -55,8 +55,8 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 	private Button button;
 	private Button download;
 	public static String localPath;
-	public static String emotionPath;
-	public static String emotionDataPath;
+	public static String emotionPath; // 压缩包路径
+	public static String emotionDataPath; // emotion.txt 表情包对应数据路径
 //	private TextView testText;
 	public static boolean flagHasData = false;
 	public static String eMotionData;
@@ -99,34 +99,27 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 	private final int TIMELINE_ID = 2;
 	private boolean onLoadedFlag = false;
 	private boolean firstClickFlag = false;
-	
+	private static View bottomLayout = null;
 
 	public static Handler editTextHandler = new Handler() {
 		public void handleMessage(Message msg) {
-			if (msg.what == 2) {
+			switch (msg.what) {
+			case 2:
 				// 处理点击返回键事件，隐藏EditText 和虚拟键盘
 				if (commentView.getVisibility() == View.VISIBLE) {
 					commentView.setVisibility(View.INVISIBLE);
+					delayShowBottomLayout(editTextHandler);
 					backTime = new Date(System.currentTimeMillis());
 				}
-
-//				if (bInputVisiable == true)
-//					inputManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
+				break;
+			case 3:
+				commentView.setVisibility(View.INVISIBLE);
+				delayShowBottomLayout(editTextHandler);
 			}
+			
 		}
 	};
-
-	private Handler refreshHandler = new Handler() {
-		public void handleMessage(android.os.Message msg) {
-			switch (msg.what) {
-			case REFRESH_COMPLETE:
-				// 重新获取服务上朋友圈信息
-				pageNum = 1;
-				friendUtils.getTimeLineData(ON_REFERSH);
-				break;
-			}
-		};
-	};
+	
 	public Handler handler = new Handler() {
 		public void handleMessage(android.os.Message msg) {
 			switch (msg.what) {
@@ -134,7 +127,7 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 				// 处理点击发表评论按钮事务
 				if (commentView.getVisibility() != View.VISIBLE) {
 					commentView.setVisibility(View.VISIBLE);
-
+					bottomLayout.setVisibility(View.INVISIBLE);
 					// 设置焦点
 					commentEdit.setFocusable(true);
 					commentEdit.setFocusableInTouchMode(true);
@@ -153,6 +146,8 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 				} else {
 					// 点击评论按钮已经显示编辑区的情况下，隐藏评论编辑区并且隐藏虚拟键盘
 					commentView.setVisibility(View.INVISIBLE);
+					delayShowBottomLayout(handler);
+					
 					if (bInputVisiable == true)
 						inputManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
 				}
@@ -160,8 +155,10 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 				break;
 			case 2:
 				// 处理点击返回键事件，隐藏EditText 和虚拟键盘
-				if (commentView.getVisibility() == View.VISIBLE)
+				if (commentView.getVisibility() == View.VISIBLE) {
 					commentView.setVisibility(View.INVISIBLE);
+					delayShowBottomLayout(handler);
+				}
 
 				if (bInputVisiable == true)
 					inputManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
@@ -176,11 +173,10 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 				break;
 			case 4:
 				showPopupWindow(msg);
-				
 				break;
 			case 5:
 				mSwipeLayout.setLoading(false);
-			
+				
 				break;
 			case 6:
 				mSwipeLayout.setRefreshing(false);
@@ -188,14 +184,38 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 			case 7:
 				adapter.notifyDataSetChanged();
 				break;
-
+			case 8:
+				// 滑动时，隐藏评论编辑框，并且显示底部导航栏
+				commentView.setVisibility(View.INVISIBLE);
+				delayShowBottomLayout(handler);
+				break;
+			case 9:
+				// 已显示评论编辑框前提下，点击朋友圈图片，或者其他控件，需要隐藏编辑框，并且显示底部导航栏
+				if (commentView.getVisibility() == View.VISIBLE) {
+					commentView.setVisibility(View.INVISIBLE);
+					delayShowBottomLayout(handler);
+				}
+				if (bInputVisiable == true)
+					inputManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
+				break;
 			}
 		}
-
 	};
-
+	
+	/**
+	 * 延迟显示底部导航栏
+	 */
+	private static void delayShowBottomLayout(Handler handler) {
+		handler.postDelayed(new Runnable() {
+			@Override
+			public void run() {
+				bottomLayout.setVisibility(View.VISIBLE);
+			}
+		}, DELAY_TIME);
+	}
+	
 	private void showPopupWindow(Message msg) {
-
+		
 		friend = friendList.get(msg.arg1);
 		if (window == null) {
 			View view = View.inflate(MainActivity.this, R.layout.popup_window_comment, null);
@@ -285,6 +305,7 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 	}
 
 	private void initView() {
+		bottomLayout = findViewById(R.id.bottom_layout);
 		
 		viewPager = (ViewPager) findViewById(R.id.main_viewpager);
 		for (int i = 0; i < item.viewNum; i++) {
@@ -319,7 +340,6 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 		
 		listview.addHeaderView(header);
 		
-		
 	}
 
 	public void onRefresh() {
@@ -331,7 +351,6 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 		// 读取下一页朋友圈数据
 		friendUtils.getTimeLineData(ON_LOAD);
 	}
-
 	
 	@Override
 	public void onClick(View v) {
@@ -420,13 +439,12 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 	@Override
 	public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
 		System.out.println("`````````````onScroll`````````````````");
-		// if (commentListView != null && commentListView.getVisibility() ==
-		// View.VISIBLE) {
-		// commentListView.setVisibility(View.INVISIBLE);
-		// }
 		if (commentView.getVisibility() == View.VISIBLE) {
-			commentView.setVisibility(View.INVISIBLE);
+			Message msg = new Message();
+			msg.what = 8;
+			handler.sendMessage(msg);
 		}
+		
 		if (bInputVisiable == true && bScrolling != true) {
 			inputManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
 			bScrolling = false;
@@ -475,8 +493,9 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
 		if (KeyEvent.KEYCODE_BACK == keyCode) {
 			if (commentView.getVisibility() == View.VISIBLE) {
-				commentView.setVisibility(View.INVISIBLE);
-//				System.out.println("11111111111111111111111111111111111111");
+				Message msg = new Message();
+				msg.what = 8;
+				handler.sendMessage(msg);
 				return true;
 			}
 			if (backTime != null) {
@@ -551,7 +570,15 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 		for (int i = 0; i < item.viewNum; i++) {
 			item.images[i].setImageResource(item.images_unselected[i]);
 			item.texts[i].setTextColor(getResources().getColor(R.color.bottom_text_unselected));
-		}	
+		}
 	}
-	
+	@Override
+	protected void onPause() {
+		if (commentView.getVisibility() == View.VISIBLE) {
+			Message msg = new Message();
+			msg.what = 9;
+			handler.sendMessage(msg);
+		}
+		super.onPause();
+	}
 }

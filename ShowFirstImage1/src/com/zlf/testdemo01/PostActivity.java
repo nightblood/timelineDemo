@@ -23,16 +23,14 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
-import android.net.Uri;
 import android.os.Bundle;
-import android.provider.MediaStore;
+import android.os.Handler;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.text.Editable;
@@ -44,12 +42,14 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.ImageView.ScaleType;
 import android.widget.RelativeLayout;
 import android.widget.SimpleAdapter;
 import android.widget.SimpleAdapter.ViewBinder;
@@ -79,13 +79,35 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 	private Button addEmotion;
 	public static List<EmotionInfo> emotionList;
 	private RelativeLayout emojiLayout;
-	private ViewPager viewPager;
+	private static ViewPager viewPager = null;
 	private GridView gv;
 	private List<View> views;
 	private int pageNum = 0;
+	private boolean inputMethodFlag = false;
 	public static String KEY_TO_SHOW_PICTURES_ACTIVITY = "CAN_SELECTED_PICTURE_COUNT";
-
+	
 	public static final int SHOW_PICTURE_CODE = 0x01;
+	
+	private static InputMethodManager inputManager;
+	public static boolean bInputVisiable = false;
+	public static boolean bScrolling = false;
+	public static boolean bEmojiVisible = false;
+	
+	private String deletEmojiPath;
+
+	public static  Handler editTextHandler = new Handler() {
+		public void handleMessage(android.os.Message msg) {
+			if (msg.what == 3) {
+				// 隐藏输入法后必须隐藏表情页
+				bInputVisiable = false;
+				if (viewPager.getVisibility() == View.VISIBLE) {
+					viewPager.setVisibility(View.INVISIBLE);
+				}
+			}
+		};
+		
+	};
+
 	// private static Map mapImageCached; // 缓存要上传图片
 
 	@Override
@@ -103,10 +125,14 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 		setContentView(R.layout.activity_post);
 
+		
 		initView();
 
-		if (emotionList != null)
+		deletEmojiPath = getApplicationContext().getFilesDir().getAbsolutePath() + "/emoticon/";
+		if (emotionList != null) {
+			ImageUtils.res2file(this, R.drawable.emoji_delete, deletEmojiPath + "delete.png");
 			initPageView();
+		}
 
 		buttonPublish.setOnClickListener(new OnClickListener() {
 			@Override
@@ -142,7 +168,6 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 								params.addBodyParameter("file" + i, file);
 						} else {
 							params.addBodyParameter("file" + i, imageFiles.get(i));
-							
 						}
 					}
 				}
@@ -221,59 +246,67 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 		buttonPublish = (Button) findViewById(R.id.post_btn);
 		buttonCancle = (Button) findViewById(R.id.cancle_btn);
 		content = (EditText) findViewById(R.id.content_et);
-		emojiLayout = (RelativeLayout) findViewById(R.id.ll_emotion);
-		viewPager = (ViewPager) findViewById(R.id.vp_contains);
+		viewPager = (ViewPager) findViewById(R.id.emotion_viewpage);
 		addEmotion = (Button) findViewById(R.id.emotion_btn);
 		addEmotion.setOnClickListener(this);
 		gridView1 = (GridView) findViewById(R.id.gridView);
+		inputManager = (InputMethodManager) content.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
 	}
 
 	// 表情页显示
 	private void initPageView() {
 		int pageCount;
-		
+
 		GridView view;
 		MyEmojiAdapter adapter;
 		int start = 0;
 		int end;
-		
+
 		if (emotionList.size() == 0)
 			return;
 		views = new ArrayList<View>();
 		end = (emotionList.size() > 21) ? 21 : emotionList.size();
-		
+
 		int temp = emotionList.size() / 21; // coloum : 7, row : 3
 		pageCount = emotionList.size() % (21 * temp) == 0 ? temp : temp + 1;
 
 		System.out.println("emotion page count : " + pageCount + " emotion count : " + emotionList.size());
 
 		// just for debug
-//		pageCount = 2;
+		// pageCount = 2;
 
+		// 在表情包里添加 删除表情 的图片
+		EmotionInfo delete;
+		for (int i= 1; i < pageCount + 1; ++i) {
+			delete = new EmotionInfo();
+			delete.setImageName("delete.png");
+			delete.setText("删除");
+			delete.emotionPath = deletEmojiPath;
+			if (i == pageCount) {
+				emotionList.add(delete);
+			} else {
+				emotionList.add(20 * i + i-1, delete);
+			}
+		}
+		
 		for (int i = 0; i < pageCount; ++i) {
 			view = new GridView(this);
-			// list = new ArrayList<EmotionInfo>();
 
-			adapter = new MyEmojiAdapter(this, emotionList.subList(start, end)); // (0,21)
-																					// (21,42)
-																					// (42,50)
+			adapter = new MyEmojiAdapter(this, emotionList.subList(start, end)); // (0,20) (21,41) (42,50)
 
 			start += 21;
 			end = ((end + 21) > emotionList.size()) ? emotionList.size() : end + 21;
-
-			view.setAdapter(adapter);
+			
 			view.setNumColumns(7);
 			view.setBackgroundColor(Color.TRANSPARENT);
-			view.setHorizontalSpacing(1);
-			view.setVerticalSpacing(1);
 			view.setStretchMode(GridView.STRETCH_COLUMN_WIDTH);
 			view.setCacheColorHint(0);
-			view.setPadding(2, 0, 2, 0);
 			view.setSelector(new ColorDrawable(Color.TRANSPARENT));
-			view.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT));
-			view.setGravity(Gravity.CENTER);
+			view.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+			
 			view.setOnItemClickListener(this);
 
+			view.setAdapter(adapter);
 			views.add(view);
 			// viewPager.addView(view);
 		}
@@ -394,8 +427,10 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 				// 移除imageFils中对应的文件
 				imageFiles.remove(position - 1);
 				// 删除图片缓存
-//				if (null != mapImageCached.get(imageFiles.get(position - 1).getName()))
-//					mapImageCached.remove(imageFiles.get(position - 1).getName());
+				// if (null != mapImageCached.get(imageFiles.get(position -
+				// 1).getName()))
+				// mapImageCached.remove(imageFiles.get(position -
+				// 1).getName());
 			}
 		});
 		builder.setNegativeButton("取消", new DialogInterface.OnClickListener() {
@@ -409,7 +444,7 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 
 	public void uploadMethod(final RequestParams params, final String uploadHost) {
 		HttpUtils http = new HttpUtils();
-//		http.configTimeout(15000);
+		// http.configTimeout(15000);
 		http.send(HttpRequest.HttpMethod.POST, uploadHost, params, new RequestCallBack<String>() {
 			@Override
 			public void onStart() {
@@ -445,54 +480,89 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 				// TODO Auto-generated method stub
 
 			}
+
 		});
 	}
 
 	@Override
-	public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
+	public void onItemClick(AdapterView<?> arg0, View view, int arg2, long arg3) {
 
 		// 点击表情后，在编辑框中添加表情。
 		EmotionInfo emoji = emotionList.get(pageNum * 21 + arg2);
 		
+		// 删除表情按钮
+		if (emoji.getText().equals("删除")) {
+			Editable et = content.getText();
+			int start = content.getSelectionStart(); // 光标位置
+			int lastEmojiStart = 0;
+			int lastEmojiEnd = 0;
+			
+			String str = content.getText().toString().substring(0, start);
+			if (str.isEmpty())
+				return;
+			
+			lastEmojiEnd = str.lastIndexOf(']');
+			if (lastEmojiEnd != 0 && lastEmojiEnd == start - 1) {
+				// 删除表情
+				lastEmojiStart = str.lastIndexOf('[');
+				et.delete(lastEmojiStart, lastEmojiEnd);
+				content.setText(et);
+				content.setSelection(lastEmojiStart);
+				content.setFocusableInTouchMode(true);
+				content.setFocusable(true);
+				
+			} else {
+				// 删除文字
+				et.delete(start - 1, start);
+				content.setText(et);
+				content.setSelection(start - 1);
+				content.setFocusableInTouchMode(true);
+				content.setFocusable(true);
+			}
+			return;
+		}
+
 		// 得到表情图片的SpannableString对象
 		SpannableString res = addFace(this, emoji.getImageName(), emoji.getText());
 
-		if (res != null) 
+		if (res != null)
 			insertPhotoToEditText(res);
-		
-//		System.out.println("content: " + content.getText().toString());
+
+		// System.out.println("content: " + content.getText().toString());
 	}
-	
+
 	/**
 	 * 将图片对象插入到光标处
-	 * @param ss
+	 * 
 	 */
 	private void insertPhotoToEditText(SpannableString ss) {
-        Editable et = content.getText();
-        int start = content.getSelectionStart();
-        et.insert(start, ss);
-        content.setText(et);
-        content.setSelection(start + ss.length());
-        content.setFocusableInTouchMode(true);
-        content.setFocusable(true);
-    }
-	 
+		Editable et = content.getText();
+		int start = content.getSelectionStart();
+		et.insert(start, ss);
+		content.setText(et);
+		content.setSelection(start + ss.length());
+		content.setFocusableInTouchMode(true);
+		content.setFocusable(true);
+	}
+
 	/**
 	 * 
-	 * @param context 
-	 * @param imageName 		图片名字
-	 * @param spannableString 	已编辑的字符串
+	 * @param context
+	 * @param imageName
+	 *            图片名字
+	 * @param spannableString
+	 *            已编辑的字符串
 	 * @return
 	 */
 	public SpannableString addFace(Context context, String imageName, String spannableString) {
-		if (TextUtils.isEmpty(spannableString)) 
+		if (TextUtils.isEmpty(spannableString))
 			return null;
-		
+
 		System.out.println("Add Face! spannableString: " + spannableString);
-		
-//		Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), imgId);
-		String localPath = getApplicationContext().getFilesDir().getAbsolutePath(); // 包名的绝对路径: /data/data/包名/
-		
+
+		String localPath = getApplicationContext().getFilesDir().getAbsolutePath(); // 包名的绝对路径:
+																					// /data/data/包名/
+
 		Bitmap bitmap = BitmapFactory.decodeFile(localPath + "/emoticon/" + imageName);
 
 		bitmap = Bitmap.createScaledBitmap(bitmap, EmotionUtils.dip2px(context, 25), EmotionUtils.dip2px(context, 25),
@@ -503,15 +573,16 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 		ImageSpan imageSpan = new ImageSpan(drawable);
 		SpannableString spannable = new SpannableString(spannableString);
 		spannable.setSpan(imageSpan, 0, spannableString.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-//		spannable.setSpan(imageSpan, 0, content.getSelectionStart(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 		return spannable;
 	}
-	
+
 	@Override
 	public void onClick(View arg0) {
 		switch (arg0.getId()) {
 		case R.id.emotion_btn:
 			if (new File(MainActivity.emotionPath).exists()) {
+				// TODO 当输入法显示的时候，点击表情按钮，将隐藏输入法
+//				inputManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
 				showEmotion();
 			} else {
 				Toast.makeText(PostActivity.this, "没有表情包，请先下载！！！", Toast.LENGTH_SHORT).show();
@@ -521,10 +592,10 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 	}
 
 	private void showEmotion() {
-		if (emojiLayout.getVisibility() == RelativeLayout.VISIBLE) {
-			emojiLayout.setVisibility(RelativeLayout.GONE);
+		if (viewPager.getVisibility() == RelativeLayout.VISIBLE) {
+			viewPager.setVisibility(RelativeLayout.GONE);
 		} else {
-			emojiLayout.setVisibility(RelativeLayout.VISIBLE);
+			viewPager.setVisibility(RelativeLayout.VISIBLE);
 		}
 	}
 

@@ -145,6 +145,9 @@ public class MyItemAdapter extends BaseAdapter{
 			holder.gridView.setOnItemClickListener(new OnItemClickListener() {
 				@Override
 				public void onItemClick(AdapterView<?> arg0, View view, int position, long id) {
+					Message msg = new Message();
+					msg.what = 9;
+					handler.sendMessage(msg);
 					imageBrowse(position, images);
 				}});
 		}
