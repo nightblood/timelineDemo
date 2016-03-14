@@ -140,7 +140,7 @@ public class MyItemAdapter extends BaseAdapter{
 			holder.gridView.setVisibility(View.GONE);
 		} else {
 			holder.gridView.setVisibility(View.VISIBLE);
-			holder.gridView.setAdapter(new NoScrollItemAdapter(images, context)); // 设置九宫格gridView的适配器
+			holder.gridView.setAdapter(new NoScrollItemAdapter(images, context)); // 设置九宫格 gridView 的适配器
 			
 			holder.gridView.setOnItemClickListener(new OnItemClickListener() {
 				@Override
@@ -185,39 +185,16 @@ public class MyItemAdapter extends BaseAdapter{
 				holder.commentView.clearAnimation();
 				holder.commentView.setVisibility(View.GONE);
 			
-//				if (datas.get(position) == View.VISIBLE) {
-//					holder.praiseText.setText("取消");
-//					holder.commentView.setVisibility(View.INVISIBLE);
-//				}
-			
-				
-//				msg = new Message();
-//				msg.what = 3;
-//				msg.obj = holder.commentView;
-//				handler.sendMessage(msg);
-//				if (holder.commentView.getVisibility() == View.VISIBLE) {
-//					holder.commentView.setVisibility(View.INVISIBLE);
-//				}
 			}
 		});
 		holder.comment.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-//				holder.commentView.clearAnimation();
-//				Animation show = AnimationUtils.loadAnimation(context, R.anim.slide_show);
-//				Animation hide = AnimationUtils.loadAnimation(context, R.anim.slide_hide);
-//				if (holder.commentView.getVisibility() == View.VISIBLE) {
-//					holder.commentView.setAnimation(hide);
-//					holder.commentView.setVisibility(View.GONE);
-//				} else {
-//					holder.commentView.setAnimation(show);
-//					holder.commentView.setVisibility(View.VISIBLE);
-//				}
+
 				// 使用popupwindow实现点击按钮出现点赞和评论按钮布局
 				
 				Vibrator vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
 				vibrator.vibrate(50);
-				
 				
 				Message msg = new Message();
 				msg.what = 4;

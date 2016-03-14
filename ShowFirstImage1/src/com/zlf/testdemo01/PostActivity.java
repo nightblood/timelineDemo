@@ -29,7 +29,9 @@ import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
@@ -39,8 +41,12 @@ import android.text.SpannableString;
 import android.text.TextUtils;
 import android.text.style.ImageSpan;
 import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.View.OnClickListener;
+import android.view.View.OnTouchListener;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
@@ -50,9 +56,14 @@ import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
+import android.widget.LinearLayout;
+import android.widget.PopupMenu;
+import android.widget.PopupWindow;
+import android.widget.PopupWindow.OnDismissListener;
 import android.widget.RelativeLayout;
 import android.widget.SimpleAdapter;
 import android.widget.SimpleAdapter.ViewBinder;
+import android.widget.TextView;
 import android.widget.Toast;
 
 /**
@@ -72,7 +83,7 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 	private final int IMAGE_OPEN = 1; // 打开图片标记
 	private List<String> pathImage = new ArrayList<String>();
 	// private List<String> pathImage = ArrayList<String>; // 选择图片路径
-	private Bitmap bmp; // 导入临时图片
+//	private Bitmap bmp; // 导入临时图片
 	private ArrayList<HashMap<String, Object>> imageItem;
 	private SimpleAdapter simpleAdapter; // 适配器
 	private static String actionUrl = "http://client.e0575.com/quanzi/app.php?c=quanzi&a=topicadd";
@@ -85,27 +96,29 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 	private int pageNum = 0;
 	private boolean inputMethodFlag = false;
 	public static String KEY_TO_SHOW_PICTURES_ACTIVITY = "CAN_SELECTED_PICTURE_COUNT";
-	
+
 	public static final int SHOW_PICTURE_CODE = 0x01;
-	
+
 	private static InputMethodManager inputManager;
 	public static boolean bInputVisiable = false;
 	public static boolean bScrolling = false;
 	public static boolean bEmojiVisible = false;
-	
-	private String deletEmojiPath;
 
-	public static  Handler editTextHandler = new Handler() {
+	private LinearLayout emojiCursor;
+	private ArrayList<View> cursorViews;
+	private final int REQUEST_CODE_CAPTURE_CAMERA = 0xff0;
+	private static View emojiView = null;
+
+	public static Handler editTextHandler = new Handler() {
 		public void handleMessage(android.os.Message msg) {
 			if (msg.what == 3) {
 				// 隐藏输入法后必须隐藏表情页
 				bInputVisiable = false;
-				if (viewPager.getVisibility() == View.VISIBLE) {
-					viewPager.setVisibility(View.INVISIBLE);
+				if (emojiView.getVisibility() == View.VISIBLE) {
+					emojiView.setVisibility(View.INVISIBLE);
 				}
 			}
 		};
-		
 	};
 
 	// private static Map mapImageCached; // 缓存要上传图片
@@ -125,12 +138,9 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 		setContentView(R.layout.activity_post);
 
-		
 		initView();
 
-		deletEmojiPath = getApplicationContext().getFilesDir().getAbsolutePath() + "/emoticon/";
 		if (emotionList != null) {
-			ImageUtils.res2file(this, R.drawable.emoji_delete, deletEmojiPath + "delete.png");
 			initPageView();
 		}
 
@@ -157,10 +167,12 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 							// TODO 可以把缓存图片放在朋友圈缓存图片文件中，当刷新时可以从缓存中取。
 							// 这种场景首先要保证是自己的状态才可以取本地缓存（这时缓存图片没有url等网络信息，也不需要这些信息），
 							// 如果不是自己的状态则必须要匹配缓存图片和更新的图片信息一致才可以加载缓存图片。
-//							bitmap = ImageUtils.compressImageFromFile(imageFiles.get(i).getAbsolutePath());
+							// bitmap =
+							// ImageUtils.compressImageFromFile(imageFiles.get(i).getAbsolutePath());
 							bitmap = ImageUtils.getSmallBitmap(imageFiles.get(i).getAbsolutePath());
-							fileName = ImageUtils.bitmap2file(ImageUtils.rotateBitmap(bitmap, 
-									ImageUtils.readPictureDegree(imageFiles.get(i).getAbsolutePath())), 
+							fileName = ImageUtils.bitmap2file(
+									ImageUtils.rotateBitmap(bitmap,
+											ImageUtils.readPictureDegree(imageFiles.get(i).getAbsolutePath())),
 									imageFiles.get(i).getName());
 
 							File file = new File(fileName);
@@ -185,11 +197,8 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 		 * 载入默认图片添加图片加号 ，通过适配器实现 SimpleAdapter参数imageItem为数据源
 		 * R.layout.griditem_addpic为布局
 		 */
-		bmp = BitmapFactory.decodeResource(getResources(), R.drawable.gridview_addpic); // 加号
-		imageItem = new ArrayList<HashMap<String, Object>>();
-		HashMap<String, Object> map = new HashMap<String, Object>();
-		map.put("itemImage", bmp);
-		imageItem.add(map);
+		Bitmap bmp = BitmapFactory.decodeResource(getResources(), R.drawable.gridview_addpic); // 加号
+		addImage(bmp);
 		simpleAdapter = new SimpleAdapter(this, imageItem, R.layout.griditem_addpic, new String[] { "itemImage" },
 				new int[] { R.id.imageView1 });
 		/*
@@ -216,24 +225,14 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 		gridView1.setOnItemClickListener(new OnItemClickListener() {
 			@Override
 			public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
-				
-				 if (position == 0) {
-					// // 点击第0张图片（加号图片），访问相册。
-					// Toast.makeText(PostActivity.this, "添加图片",
-					// Toast.LENGTH_SHORT).show();
-					// // 选择图片
-					// Intent intent = new Intent(Intent.ACTION_PICK,
-					// android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-					// startActivityForResult(intent, IMAGE_OPEN);
-					// // 通过onResume()刷新数据
-					if (imageItem.size() == 10) {
-						Toast.makeText(PostActivity.this, "图片数9张已满!", Toast.LENGTH_SHORT).show();
-						return;
-					}
-					Intent intent = new Intent();
-					intent.setClass(PostActivity.this, ShowPicturesActivity.class);
-					intent.putExtra(KEY_TO_SHOW_PICTURES_ACTIVITY , 10 - imageItem.size());
-					startActivityForResult(intent, SHOW_PICTURE_CODE);
+
+				if (position == 0) {
+					 if (imageItem.size() == 10) {
+						 Toast.makeText(PostActivity.this, "图片数9张已满!",
+								 Toast.LENGTH_SHORT).show();
+						 return;
+					 }
+					 showPopupWindow();
 				} else {
 					// 提示是否移除添加好的图片
 					dialog(position);
@@ -242,11 +241,88 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 		});
 	}
 
+	private void addImage(Bitmap bmp) {
+		imageItem = new ArrayList<HashMap<String, Object>>();
+		HashMap<String, Object> map = new HashMap<String, Object>();
+		map.put("itemImage", bmp);
+		imageItem.add(map);
+	}
+
+	protected void showPopupWindow() {
+		View contentView = LayoutInflater.from(this).inflate(R.layout.popup_window_add_button, null);
+		// contentView.setPadding(ImageUtils.dip2px(this, 20), 0,
+		// ImageUtils.dip2px(this, 20), 0);
+		final PopupWindow window = new PopupWindow(contentView, ViewGroup.LayoutParams.WRAP_CONTENT,
+				ViewGroup.LayoutParams.WRAP_CONTENT, true);
+		window.setTouchable(true);
+		window.setTouchInterceptor(new OnTouchListener() {
+			@Override
+			public boolean onTouch(View v, MotionEvent event) {
+
+				return false;
+			}
+		});
+		window.setOnDismissListener(new OnDismissListener() {
+			@Override
+			public void onDismiss() {
+				backgroundAlpha(1f);
+			}
+		});
+
+		backgroundAlpha(0.7f);
+		window.setWidth(getWindowManager().getDefaultDisplay().getWidth() * 7 / 8);
+		window.setBackgroundDrawable(getResources().getDrawable(R.drawable.shape2));
+		window.showAtLocation(this.findViewById(R.id.container), Gravity.CENTER, 0, 0);
+
+		TextView camera = (TextView) contentView.findViewById(R.id.from_camera);
+		TextView pictures = (TextView) contentView.findViewById(R.id.from_pictures);
+
+		camera.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				getImageFromCamera();
+				window.dismiss();
+			}
+		});
+		pictures.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				getImageFromAlbum();
+				window.dismiss();
+			}
+
+		});
+	}
+	private void getImageFromAlbum() {
+		Intent intent = new Intent();
+		intent.setClass(PostActivity.this, ShowPicturesActivity.class);
+		intent.putExtra(KEY_TO_SHOW_PICTURES_ACTIVITY, 10 - imageItem.size());
+		startActivityForResult(intent, SHOW_PICTURE_CODE);
+	}
+	private void getImageFromCamera() {  
+	       String state = Environment.getExternalStorageState();  
+	       if (state.equals(Environment.MEDIA_MOUNTED)) {  
+	           Intent getImageByCamera = new Intent("android.media.action.IMAGE_CAPTURE");     
+	           startActivityForResult(getImageByCamera, REQUEST_CODE_CAPTURE_CAMERA);  
+	       }  
+	       else {  
+	           Toast.makeText(getApplicationContext(), "请确认已经插入SD卡", Toast.LENGTH_LONG).show();  
+	       }  
+	   }
+	private void backgroundAlpha(float bgAlpha) {
+		WindowManager.LayoutParams lp = getWindow().getAttributes();
+		lp.alpha = bgAlpha;
+		getWindow().setAttributes(lp);
+	}
+
 	private void initView() {
 		buttonPublish = (Button) findViewById(R.id.post_btn);
 		buttonCancle = (Button) findViewById(R.id.cancle_btn);
 		content = (EditText) findViewById(R.id.content_et);
+
+		emojiView = findViewById(R.id.emoji_layout);
 		viewPager = (ViewPager) findViewById(R.id.emotion_viewpage);
+		emojiCursor = (LinearLayout) findViewById(R.id.emoji_cursor);
 		addEmotion = (Button) findViewById(R.id.emotion_btn);
 		addEmotion.setOnClickListener(this);
 		gridView1 = (GridView) findViewById(R.id.gridView);
@@ -272,38 +348,26 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 
 		System.out.println("emotion page count : " + pageCount + " emotion count : " + emotionList.size());
 
-		// just for debug
-		// pageCount = 2;
+		// 初始化表情页的游标
+		initEmojiCursor(pageCount);
 
-		// 在表情包里添加 删除表情 的图片
-		EmotionInfo delete;
-		for (int i= 1; i < pageCount + 1; ++i) {
-			delete = new EmotionInfo();
-			delete.setImageName("delete.png");
-			delete.setText("删除");
-			delete.emotionPath = deletEmojiPath;
-			if (i == pageCount) {
-				emotionList.add(delete);
-			} else {
-				emotionList.add(20 * i + i-1, delete);
-			}
-		}
-		
 		for (int i = 0; i < pageCount; ++i) {
 			view = new GridView(this);
 
-			adapter = new MyEmojiAdapter(this, emotionList.subList(start, end)); // (0,20) (21,41) (42,50)
+			adapter = new MyEmojiAdapter(this, emotionList.subList(start, end)); // (0,20)
+																					// (21,41)
+																					// (42,50)
 
 			start += 21;
 			end = ((end + 21) > emotionList.size()) ? emotionList.size() : end + 21;
-			
+
 			view.setNumColumns(7);
 			view.setBackgroundColor(Color.TRANSPARENT);
 			view.setStretchMode(GridView.STRETCH_COLUMN_WIDTH);
 			view.setCacheColorHint(0);
 			view.setSelector(new ColorDrawable(Color.TRANSPARENT));
 			view.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
-			
+
 			view.setOnItemClickListener(this);
 
 			view.setAdapter(adapter);
@@ -317,6 +381,13 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 			@Override
 			public void onPageSelected(int arg0) {
 				pageNum = arg0;
+				for (int i = 0; i < cursorViews.size(); ++i) {
+					if (i == arg0) {
+						cursorViews.get(i).setBackgroundResource(R.drawable.cursor2);
+					} else {
+						cursorViews.get(i).setBackgroundResource(R.drawable.cursor1);
+					}
+				}
 			}
 
 			@Override
@@ -329,6 +400,29 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 
 			}
 		});
+	}
+
+	private void initEmojiCursor(int pageCount) {
+		ImageView imageView;
+		LinearLayout.LayoutParams lp;
+		cursorViews = new ArrayList<View>();
+		for (int i = 0; i < pageCount; ++i) {
+			imageView = new ImageView(this);
+			lp = new LinearLayout.LayoutParams(
+					new ViewGroup.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+			lp.leftMargin = ImageUtils.dip2px(this, 5);
+			lp.rightMargin = ImageUtils.dip2px(this, 5);
+			lp.width = ImageUtils.dip2px(this, 5);
+			lp.height = ImageUtils.dip2px(this, 5);
+
+			emojiCursor.addView(imageView, lp);
+			if (i == 0) {
+				imageView.setBackgroundResource(R.drawable.cursor2);
+			} else {
+				imageView.setBackgroundResource(R.drawable.cursor1);
+			}
+			cursorViews.add(imageView);
+		}
 	}
 
 	// 获取图片路径 响应startActivityForResult
@@ -345,32 +439,23 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 				System.out.println(pathImage.get(i));
 				imageFiles.add(new File(pathImage.get(i)));
 			}
+		} else if (requestCode == REQUEST_CODE_CAPTURE_CAMERA) {
+			System.out.println("得到返回的结果");
+			if (data == null)
+				return;
+			Uri uri = data.getData();
+			if (uri == null)
+				return;
+			Bundle bundle = data.getExtras();
+			if (bundle == null) 
+				return;
+			Bitmap bitmap = (Bitmap) bundle.get("data");
+			
+			pathImage = new ArrayList<String>();
+			pathImage.add(ImageUtils.getRealFilePath(this, uri));
+
+			imageFiles.add(new File(pathImage.get(0)));
 		}
-
-		// 打开图片
-		// if (resultCode == RESULT_OK && requestCode == IMAGE_OPEN) {
-		// Uri uri = data.getData();
-		//
-		// if (!TextUtils.isEmpty(uri.getAuthority())) {
-		// System.out.println("-------要上传的图片------------->" + uri);
-		// // 查询选择图片
-		// Cursor cursor = getContentResolver().query(uri, new String[] {
-		// MediaStore.Images.Media.DATA }, null,
-		// null, null);
-		// // 返回 没找到选择图片
-		// if (null == cursor) {
-		// return;
-		// }
-		// // 光标移动至开头 获取图片路径
-		// cursor.moveToFirst();
-		// pathImage =
-		// cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA));
-		// File f = new File(pathImage);
-		// imageFiles.add(f);
-		//
-		// }
-		// } // end if 打开图片
-
 	}
 
 	// 刷新图片
@@ -383,7 +468,8 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 		Bitmap addbmp;
 		for (int i = 0; i < pathImage.size(); ++i) {
 			if (!TextUtils.isEmpty(pathImage.get(i))) {
-//				addbmp = ImageUtils.comp(BitmapFactory.decodeFile(pathImage.get(i)));
+				// addbmp =
+				// ImageUtils.comp(BitmapFactory.decodeFile(pathImage.get(i)));
 				addbmp = ImageUtils.getSmallBitmap(pathImage.get(i));
 				HashMap<String, Object> map = new HashMap<String, Object>();
 				map.put("itemImage", ImageUtils.rotateBitmap(addbmp, ImageUtils.readPictureDegree(pathImage.get(i))));
@@ -426,11 +512,6 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 				simpleAdapter.notifyDataSetChanged();
 				// 移除imageFils中对应的文件
 				imageFiles.remove(position - 1);
-				// 删除图片缓存
-				// if (null != mapImageCached.get(imageFiles.get(position -
-				// 1).getName()))
-				// mapImageCached.remove(imageFiles.get(position -
-				// 1).getName());
 			}
 		});
 		builder.setNegativeButton("取消", new DialogInterface.OnClickListener() {
@@ -489,28 +570,28 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 
 		// 点击表情后，在编辑框中添加表情。
 		EmotionInfo emoji = emotionList.get(pageNum * 21 + arg2);
-		
+
 		// 删除表情按钮
 		if (emoji.getText().equals("删除")) {
 			Editable et = content.getText();
 			int start = content.getSelectionStart(); // 光标位置
 			int lastEmojiStart = 0;
 			int lastEmojiEnd = 0;
-			
+
 			String str = content.getText().toString().substring(0, start);
 			if (str.isEmpty())
 				return;
-			
+
 			lastEmojiEnd = str.lastIndexOf(']');
 			if (lastEmojiEnd != 0 && lastEmojiEnd == start - 1) {
 				// 删除表情
 				lastEmojiStart = str.lastIndexOf('[');
-				et.delete(lastEmojiStart, lastEmojiEnd);
+				et.delete(lastEmojiStart, lastEmojiEnd + 1);
 				content.setText(et);
 				content.setSelection(lastEmojiStart);
 				content.setFocusableInTouchMode(true);
 				content.setFocusable(true);
-				
+
 			} else {
 				// 删除文字
 				et.delete(start - 1, start);
@@ -581,8 +662,6 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 		switch (arg0.getId()) {
 		case R.id.emotion_btn:
 			if (new File(MainActivity.emotionPath).exists()) {
-				// TODO 当输入法显示的时候，点击表情按钮，将隐藏输入法
-//				inputManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
 				showEmotion();
 			} else {
 				Toast.makeText(PostActivity.this, "没有表情包，请先下载！！！", Toast.LENGTH_SHORT).show();
@@ -592,10 +671,10 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 	}
 
 	private void showEmotion() {
-		if (viewPager.getVisibility() == RelativeLayout.VISIBLE) {
-			viewPager.setVisibility(RelativeLayout.GONE);
+		if (emojiView.getVisibility() == RelativeLayout.VISIBLE) {
+			emojiView.setVisibility(RelativeLayout.GONE);
 		} else {
-			viewPager.setVisibility(RelativeLayout.VISIBLE);
+			emojiView.setVisibility(RelativeLayout.VISIBLE);
 		}
 	}
 

@@ -296,6 +296,7 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 
+		ImageUtils.res2file(this, R.drawable.emoji_delete, getApplicationContext().getFilesDir().getAbsolutePath() + "/emoticon/" + "delete.png");
 		item = BottomViewItem.getInstance();
 		
 		initView();		
@@ -574,7 +575,7 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 	}
 	@Override
 	protected void onPause() {
-		if (commentView.getVisibility() == View.VISIBLE) {
+		if (commentView != null && commentView.getVisibility() == View.VISIBLE) {
 			Message msg = new Message();
 			msg.what = 9;
 			handler.sendMessage(msg);

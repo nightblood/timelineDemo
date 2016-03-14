@@ -4,18 +4,17 @@ import android.content.Context;
 import android.os.Message;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.widget.RelativeLayout;
 
-public class MyLayout extends RelativeLayout{
+public class MyPostLayout extends RelativeLayout{
 
 	private static boolean bStartupFlag = false;
-	public MyLayout(Context context) {
+	public MyPostLayout(Context context) {
 		super(context);
 	}
-	private static int count = 0; 
+//	private static int count = 0; 
     
-    public MyLayout(Context context, AttributeSet attrs) { 
+    public MyPostLayout(Context context, AttributeSet attrs) { 
         super(context, attrs); 
     } 
      
@@ -26,25 +25,25 @@ public class MyLayout extends RelativeLayout{
         	bStartupFlag = true;
         	return;
         }
-        if (MainActivity.bScrolling == true) {
+        if (PostActivity.bScrolling == true) {
         	// 滑动中，有main activity自己设置bInputVisiable的值
         	return;
         }
         if (h > oldh) {
-        	if (MainActivity.bInputVisiable == false) {
-        		Log.e("onSizeChanged", "Error bInputVisiable!!!!!!!!!!!!!!!!!!" + MainActivity.bInputVisiable);
+        	if (PostActivity.bInputVisiable == false) {
+        		Log.e("onSizeChanged", "Error bInputVisiable!!!!!!!!!!!!!!!!!!" + PostActivity.bInputVisiable);
         	}
-        	MainActivity.bInputVisiable = false;
-        	// 隐藏输入法后必须显示底部导航栏,并且隐藏编辑框
+        	
+        	// 隐藏输入法后必须隐藏表情页
         	Message msg = new Message();
         	msg.what = 3;
-        	MainActivity.editTextHandler.sendMessage(msg);
+        	PostActivity.editTextHandler.sendMessage(msg);
         	Log.e("onSizeChanged", "bInputInVisiable set false");
         } else if (h < oldh){
-        	if (MainActivity.bInputVisiable == true) {
-        		Log.e("onSizeChanged", "Error bInputVisiable!!!!!!!!!!!!!!!!!!" + MainActivity.bInputVisiable);
+        	if (PostActivity.bInputVisiable == true) {
+        		Log.e("onSizeChanged", "Error bInputVisiable!!!!!!!!!!!!!!!!!!" + PostActivity.bInputVisiable);
         	}
-        	MainActivity.bInputVisiable = true;
+        	PostActivity.bInputVisiable = true;
         	Log.e("onSizeChanged", "bInputInVisiable set true");
         }
 //        Log.e("onSizeChanged " + count++, "=>onResize called! w="+w + ",h="+h+",oldw="+oldw+",oldh="+oldh); 

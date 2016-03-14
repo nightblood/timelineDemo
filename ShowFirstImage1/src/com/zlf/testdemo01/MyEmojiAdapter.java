@@ -10,6 +10,7 @@ import android.graphics.BitmapFactory;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewGroup.LayoutParams;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 
@@ -58,6 +59,7 @@ public class MyEmojiAdapter extends BaseAdapter{
 		}
 		
 		vh.iv = (ImageView) convertView.findViewById(R.id.image);
+//		vh.iv.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
 		vh.iv.setTag(data.get(position));
 		bm = BitmapFactory.decodeFile(MainActivity.localPath + "/emoticon/" + data.get(position).getImageName());
 		
@@ -65,7 +67,6 @@ public class MyEmojiAdapter extends BaseAdapter{
 		
 		vh.iv.setImageBitmap(bm);
 		
-//		vh.iv.setImageResource(R.drawable.ic_launcher);
 		convertView.setTag(vh);
 		
 		return convertView;

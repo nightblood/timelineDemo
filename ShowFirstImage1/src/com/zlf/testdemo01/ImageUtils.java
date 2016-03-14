@@ -6,12 +6,16 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+import android.content.ContentResolver;
 import android.content.Context;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.media.ExifInterface;
+import android.net.Uri;
+import android.provider.MediaStore.Images.ImageColumns;
 import android.util.Base64;
 
 public class ImageUtils {
@@ -149,8 +153,9 @@ public class ImageUtils {
 		}
 		return fileName;
 	}
+
 	public static void res2file(Context context, int id, String pathName) {
-		
+
 		// String fileName = "/" + name;
 		File file = new File(pathName);
 		if (file.exists()) {
@@ -207,37 +212,72 @@ public class ImageUtils {
 
 		return BitmapFactory.decodeFile(filePath, options);
 	}
-	public static Bitmap rotateBitmap(Bitmap bitmap,int degress) {  
-        if (bitmap != null) {  
-            Matrix m = new Matrix();  
-            m.postRotate(degress);   
-            bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(),  
-                    bitmap.getHeight(), m, true);  
-            return bitmap;  
-        }  
-        return bitmap;  
-    }  
-	public static int readPictureDegree(String path) {  
-        int degree = 0;  
-        try {  
-            ExifInterface exifInterface = new ExifInterface(path);  
-            int orientation = exifInterface.getAttributeInt(  
-                    ExifInterface.TAG_ORIENTATION,  
-                    ExifInterface.ORIENTATION_NORMAL);  
-            switch (orientation) {  
-            case ExifInterface.ORIENTATION_ROTATE_90:  
-                degree = 90;  
-                break;  
-            case ExifInterface.ORIENTATION_ROTATE_180:  
-                degree = 180;  
-                break;  
-            case ExifInterface.ORIENTATION_ROTATE_270:  
-                degree = 270;  
-                break;  
-            }  
-        } catch (IOException e) {  
-            e.printStackTrace();  
-        }  
-        return degree;  
-    } 
+
+	public static Bitmap rotateBitmap(Bitmap bitmap, int degress) {
+		if (bitmap != null) {
+			Matrix m = new Matrix();
+			m.postRotate(degress);
+			bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), m, true);
+			return bitmap;
+		}
+		return bitmap;
+	}
+
+	public static int readPictureDegree(String path) {
+		int degree = 0;
+		try {
+			ExifInterface exifInterface = new ExifInterface(path);
+			int orientation = exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION,
+					ExifInterface.ORIENTATION_NORMAL);
+			switch (orientation) {
+			case ExifInterface.ORIENTATION_ROTATE_90:
+				degree = 90;
+				break;
+			case ExifInterface.ORIENTATION_ROTATE_180:
+				degree = 180;
+				break;
+			case ExifInterface.ORIENTATION_ROTATE_270:
+				degree = 270;
+				break;
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return degree;
+	}
+
+	public static int px2dip(Context context, float pxValue) {
+		final float scale = context.getResources().getDisplayMetrics().density;
+		return (int) (pxValue / scale + 0.5f);
+	}
+
+	public static int dip2px(Context context, float dipValue) {
+		final float scale = context.getResources().getDisplayMetrics().density;
+		return (int) (dipValue * scale + 0.5f);
+	}
+
+	public static String getRealFilePath(final Context context, final Uri uri) {
+		if (null == uri)
+			return null;
+		final String scheme = uri.getScheme();
+		String data = null;
+		if (scheme == null)
+			data = uri.getPath();
+		else if (ContentResolver.SCHEME_FILE.equals(scheme)) {
+			data = uri.getPath();
+		} else if (ContentResolver.SCHEME_CONTENT.equals(scheme)) {
+			Cursor cursor = context.getContentResolver().query(uri, new String[] { ImageColumns.DATA }, null, null,
+					null);
+			if (null != cursor) {
+				if (cursor.moveToFirst()) {
+					int index = cursor.getColumnIndex(ImageColumns.DATA);
+					if (index > -1) {
+						data = cursor.getString(index);
+					}
+				}
+				cursor.close();
+			}
+		}
+		return data;
+	}
 }
