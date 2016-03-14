@@ -21,8 +21,8 @@
             android:layout_alignParentTop="true"
             android:gravity="center"
             android:text="写说说"
-            android:textStyle="bold"
-            android:textSize="25sp" />
+            android:textSize="25sp"
+            android:textStyle="bold" />
 
         <Button
             android:id="@+id/cancle_btn"
@@ -42,8 +42,8 @@
             android:layout_alignParentLeft="true"
             android:layout_below="@id/title"
             android:layout_marginLeft="5dp"
-            android:text="发布说说"
             android:background="@drawable/shape"
+            android:text="发布说说"
             android:textSize="15sp" />
     </RelativeLayout>
     <!-- 顶部添加文字 -->
@@ -105,18 +105,8 @@
                     android:layout_margin="10dp"
                     android:background="@drawable/pic" />
             </LinearLayout>
-           
-                <android.support.v4.view.ViewPager
-                    android:id="@+id/emotion_viewpage"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="5dp"
-                    android:layout_marginLeft="10dp"
-                    android:layout_marginRight="10dp"
-                    android:layout_marginBottom="5dp"
-                    android:visibility="gone" >
-                </android.support.v4.view.ViewPager>
 
+            
             <!-- 添加要上传的图片 -->
 
             <GridView

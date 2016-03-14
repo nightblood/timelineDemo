@@ -2,6 +2,7 @@ package com.zlf.testdemo01;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
@@ -44,9 +45,9 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
@@ -55,9 +56,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.ImageView;
-import android.widget.ImageView.ScaleType;
 import android.widget.LinearLayout;
-import android.widget.PopupMenu;
 import android.widget.PopupWindow;
 import android.widget.PopupWindow.OnDismissListener;
 import android.widget.RelativeLayout;
@@ -103,25 +102,25 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 	public static boolean bInputVisiable = false;
 	public static boolean bScrolling = false;
 	public static boolean bEmojiVisible = false;
+	private Date emojiTime = null;
 
-	private LinearLayout emojiCursor;
+//	private LinearLayout emojiCursor;
 	private ArrayList<View> cursorViews;
 	private final int REQUEST_CODE_CAPTURE_CAMERA = 0xff0;
-	private static View emojiView = null;
+	private PopupWindow emojiWindow;
+//	private static View emojiView = null;
 
 	public static Handler editTextHandler = new Handler() {
 		public void handleMessage(android.os.Message msg) {
 			if (msg.what == 3) {
 				// 隐藏输入法后必须隐藏表情页
 				bInputVisiable = false;
-				if (emojiView.getVisibility() == View.VISIBLE) {
-					emojiView.setVisibility(View.INVISIBLE);
-				}
+//				if (emojiView.getVisibility() == View.VISIBLE) {
+//					emojiView.setVisibility(View.INVISIBLE);
+//				}
 			}
 		};
 	};
-
-	// private static Map mapImageCached; // 缓存要上传图片
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -141,7 +140,7 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 		initView();
 
 		if (emotionList != null) {
-			initPageView();
+//			initPageView();
 		}
 
 		buttonPublish.setOnClickListener(new OnClickListener() {
@@ -167,8 +166,6 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 							// TODO 可以把缓存图片放在朋友圈缓存图片文件中，当刷新时可以从缓存中取。
 							// 这种场景首先要保证是自己的状态才可以取本地缓存（这时缓存图片没有url等网络信息，也不需要这些信息），
 							// 如果不是自己的状态则必须要匹配缓存图片和更新的图片信息一致才可以加载缓存图片。
-							// bitmap =
-							// ImageUtils.compressImageFromFile(imageFiles.get(i).getAbsolutePath());
 							bitmap = ImageUtils.getSmallBitmap(imageFiles.get(i).getAbsolutePath());
 							fileName = ImageUtils.bitmap2file(
 									ImageUtils.rotateBitmap(bitmap,
@@ -239,6 +236,106 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 				}
 			}
 		});
+		
+		// 表情页 PopupWindow + ViewPager
+		initEmojiPopupWindow();
+		
+	}
+
+	private void initEmojiPopupWindow() {
+		View contentView = LayoutInflater.from(this).inflate(R.layout.popup_window_emoji, null);
+		emojiWindow = new PopupWindow(contentView, ViewGroup.LayoutParams.MATCH_PARENT,
+				ViewGroup.LayoutParams.WRAP_CONTENT, true);
+		emojiWindow.setFocusable(false);
+		emojiWindow.setTouchable(true);
+		emojiWindow.setOutsideTouchable(true);
+		
+		emojiWindow.setTouchInterceptor(new OnTouchListener() {
+			@Override
+			public boolean onTouch(View v, MotionEvent event) {
+
+				return false;
+			}
+		});
+		emojiWindow.setOnDismissListener(new OnDismissListener() {
+			@Override
+			public void onDismiss() {
+			}
+		});
+		emojiWindow.setBackgroundDrawable(getResources().getDrawable(R.drawable.shape2));
+		
+		ViewPager viewPager = (ViewPager) contentView.findViewById(R.id.emotion_viewpage);
+		View cursor = contentView.findViewById(R.id.emoji_cursor);
+		LinearLayout emojiCursor = (LinearLayout) contentView.findViewById(R.id.emoji_cursor);
+		initEmojiPageView(viewPager, emojiCursor);
+		
+	}
+
+	private void initEmojiPageView(ViewPager viewPager, LinearLayout emojiCursor) {
+		int pageCount;
+		GridView view;
+		MyEmojiAdapter adapter;
+		int start = 0;
+		int end;
+		if (emotionList.size() == 0)
+			return;
+		views = new ArrayList<View>();
+		end = (emotionList.size() > 21) ? 21 : emotionList.size();
+
+		int temp = emotionList.size() / 21; // coloum : 7, row : 3
+		pageCount = emotionList.size() % (21 * temp) == 0 ? temp : temp + 1;
+
+		// 初始化表情页的游标
+		initEmojiCursor(pageCount, emojiCursor);
+		for (int i = 0; i < pageCount; ++i) {
+			view = new GridView(this);
+
+			adapter = new MyEmojiAdapter(this, emotionList.subList(start, end)); // (0,20)
+																					// (21,41)
+																					// (42,50)
+			start += 21;
+			end = ((end + 21) > emotionList.size()) ? emotionList.size() : end + 21;
+
+			view.setNumColumns(7);
+			view.setBackgroundColor(Color.TRANSPARENT);
+			view.setStretchMode(GridView.STRETCH_COLUMN_WIDTH);
+			view.setCacheColorHint(0);
+			view.setSelector(new ColorDrawable(Color.TRANSPARENT));
+			view.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+
+			view.setOnItemClickListener(this);
+
+			view.setAdapter(adapter);
+			views.add(view);
+			// viewPager.addView(view);
+		}
+		viewPager.setAdapter(new MyEmojiViewPagerAdapter(views));
+		viewPager.setCurrentItem(0);
+		viewPager.setOnPageChangeListener(new OnPageChangeListener() {
+
+			@Override
+			public void onPageSelected(int arg0) {
+				pageNum = arg0;
+				for (int i = 0; i < cursorViews.size(); ++i) {
+					if (i == arg0) {
+						cursorViews.get(i).setBackgroundResource(R.drawable.cursor2);
+					} else {
+						cursorViews.get(i).setBackgroundResource(R.drawable.cursor1);
+					}
+				}
+			}
+
+			@Override
+			public void onPageScrolled(int arg0, float arg1, int arg2) {
+
+			}
+
+			@Override
+			public void onPageScrollStateChanged(int arg0) {
+
+			}
+		});
+	
 	}
 
 	private void addImage(Bitmap bmp) {
@@ -250,8 +347,6 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 
 	protected void showPopupWindow() {
 		View contentView = LayoutInflater.from(this).inflate(R.layout.popup_window_add_button, null);
-		// contentView.setPadding(ImageUtils.dip2px(this, 20), 0,
-		// ImageUtils.dip2px(this, 20), 0);
 		final PopupWindow window = new PopupWindow(contentView, ViewGroup.LayoutParams.WRAP_CONTENT,
 				ViewGroup.LayoutParams.WRAP_CONTENT, true);
 		window.setTouchable(true);
@@ -320,9 +415,9 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 		buttonCancle = (Button) findViewById(R.id.cancle_btn);
 		content = (EditText) findViewById(R.id.content_et);
 
-		emojiView = findViewById(R.id.emoji_layout);
+//		emojiView = findViewById(R.id.emoji_layout);
 		viewPager = (ViewPager) findViewById(R.id.emotion_viewpage);
-		emojiCursor = (LinearLayout) findViewById(R.id.emoji_cursor);
+//		emojiCursor = (LinearLayout) findViewById(R.id.emoji_cursor);
 		addEmotion = (Button) findViewById(R.id.emotion_btn);
 		addEmotion.setOnClickListener(this);
 		gridView1 = (GridView) findViewById(R.id.gridView);
@@ -330,79 +425,79 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 	}
 
 	// 表情页显示
-	private void initPageView() {
-		int pageCount;
+//	private void initPageView() {
+//		int pageCount;
+//
+//		GridView view;
+//		MyEmojiAdapter adapter;
+//		int start = 0;
+//		int end;
+//
+//		if (emotionList.size() == 0)
+//			return;
+//		views = new ArrayList<View>();
+//		end = (emotionList.size() > 21) ? 21 : emotionList.size();
+//
+//		int temp = emotionList.size() / 21; // coloum : 7, row : 3
+//		pageCount = emotionList.size() % (21 * temp) == 0 ? temp : temp + 1;
+//
+//		System.out.println("emotion page count : " + pageCount + " emotion count : " + emotionList.size());
+//
+//		// 初始化表情页的游标
+//		initEmojiCursor(pageCount);
+//
+//		for (int i = 0; i < pageCount; ++i) {
+//			view = new GridView(this);
+//
+//			adapter = new MyEmojiAdapter(this, emotionList.subList(start, end)); // (0,20)
+//																					// (21,41)
+//																					// (42,50)
+//
+//			start += 21;
+//			end = ((end + 21) > emotionList.size()) ? emotionList.size() : end + 21;
+//
+//			view.setNumColumns(7);
+//			view.setBackgroundColor(Color.TRANSPARENT);
+//			view.setStretchMode(GridView.STRETCH_COLUMN_WIDTH);
+//			view.setCacheColorHint(0);
+//			view.setSelector(new ColorDrawable(Color.TRANSPARENT));
+//			view.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+//
+//			view.setOnItemClickListener(this);
+//
+//			view.setAdapter(adapter);
+//			views.add(view);
+//			// viewPager.addView(view);
+//		}
+//		viewPager.setAdapter(new MyEmojiViewPagerAdapter(views));
+//		viewPager.setCurrentItem(0);
+//		viewPager.setOnPageChangeListener(new OnPageChangeListener() {
+//
+//			@Override
+//			public void onPageSelected(int arg0) {
+//				pageNum = arg0;
+//				for (int i = 0; i < cursorViews.size(); ++i) {
+//					if (i == arg0) {
+//						cursorViews.get(i).setBackgroundResource(R.drawable.cursor2);
+//					} else {
+//						cursorViews.get(i).setBackgroundResource(R.drawable.cursor1);
+//					}
+//				}
+//			}
+//
+//			@Override
+//			public void onPageScrolled(int arg0, float arg1, int arg2) {
+//
+//			}
+//
+//			@Override
+//			public void onPageScrollStateChanged(int arg0) {
+//
+//			}
+//		});
+//	}
 
-		GridView view;
-		MyEmojiAdapter adapter;
-		int start = 0;
-		int end;
-
-		if (emotionList.size() == 0)
-			return;
-		views = new ArrayList<View>();
-		end = (emotionList.size() > 21) ? 21 : emotionList.size();
-
-		int temp = emotionList.size() / 21; // coloum : 7, row : 3
-		pageCount = emotionList.size() % (21 * temp) == 0 ? temp : temp + 1;
-
-		System.out.println("emotion page count : " + pageCount + " emotion count : " + emotionList.size());
-
-		// 初始化表情页的游标
-		initEmojiCursor(pageCount);
-
-		for (int i = 0; i < pageCount; ++i) {
-			view = new GridView(this);
-
-			adapter = new MyEmojiAdapter(this, emotionList.subList(start, end)); // (0,20)
-																					// (21,41)
-																					// (42,50)
-
-			start += 21;
-			end = ((end + 21) > emotionList.size()) ? emotionList.size() : end + 21;
-
-			view.setNumColumns(7);
-			view.setBackgroundColor(Color.TRANSPARENT);
-			view.setStretchMode(GridView.STRETCH_COLUMN_WIDTH);
-			view.setCacheColorHint(0);
-			view.setSelector(new ColorDrawable(Color.TRANSPARENT));
-			view.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
-
-			view.setOnItemClickListener(this);
-
-			view.setAdapter(adapter);
-			views.add(view);
-			// viewPager.addView(view);
-		}
-		viewPager.setAdapter(new MyEmojiViewPagerAdapter(views));
-		viewPager.setCurrentItem(0);
-		viewPager.setOnPageChangeListener(new OnPageChangeListener() {
-
-			@Override
-			public void onPageSelected(int arg0) {
-				pageNum = arg0;
-				for (int i = 0; i < cursorViews.size(); ++i) {
-					if (i == arg0) {
-						cursorViews.get(i).setBackgroundResource(R.drawable.cursor2);
-					} else {
-						cursorViews.get(i).setBackgroundResource(R.drawable.cursor1);
-					}
-				}
-			}
-
-			@Override
-			public void onPageScrolled(int arg0, float arg1, int arg2) {
-
-			}
-
-			@Override
-			public void onPageScrollStateChanged(int arg0) {
-
-			}
-		});
-	}
-
-	private void initEmojiCursor(int pageCount) {
+	private void initEmojiCursor(int pageCount, LinearLayout emojiCursor) {
 		ImageView imageView;
 		LinearLayout.LayoutParams lp;
 		cursorViews = new ArrayList<View>();
@@ -662,7 +757,18 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 		switch (arg0.getId()) {
 		case R.id.emotion_btn:
 			if (new File(MainActivity.emotionPath).exists()) {
-				showEmotion();
+				if (emojiTime == null) {
+					emojiTime = new Date(System.currentTimeMillis());
+					emojiTime.getTime();
+					emojiWindow.showAsDropDown(addEmotion, 0, 10);
+				} else {
+					Date time = new Date(System.currentTimeMillis());
+					if (time.getTime() - emojiTime.getTime() > 10000) {
+						emojiWindow.showAsDropDown(addEmotion, 0, 10);
+						time = null;
+					}
+				}
+				
 			} else {
 				Toast.makeText(PostActivity.this, "没有表情包，请先下载！！！", Toast.LENGTH_SHORT).show();
 			}
@@ -671,11 +777,11 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 	}
 
 	private void showEmotion() {
-		if (emojiView.getVisibility() == RelativeLayout.VISIBLE) {
-			emojiView.setVisibility(RelativeLayout.GONE);
-		} else {
-			emojiView.setVisibility(RelativeLayout.VISIBLE);
-		}
+//		if (emojiView.getVisibility() == RelativeLayout.VISIBLE) {
+//			emojiView.setVisibility(RelativeLayout.GONE);
+//		} else {
+//			emojiView.setVisibility(RelativeLayout.VISIBLE);
+//		}
 	}
 
 }
