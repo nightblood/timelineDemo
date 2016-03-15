@@ -9,4 +9,5 @@
     <color name="black">#000000</color>
     <color name="bottom_text_selected">#ffffff</color>
     <color name="bottom_text_unselected">#82858b</color>
+    <color name="id_color">#26698c</color>
 </resources>

@@ -24,6 +24,7 @@ public class FriendInfo {
 	
 	private boolean bPraiseFlag;
 	private boolean visibleFlag;
+	private ArrayList<String> commentContent;
 	
 	public int getId() {
 		return id;
@@ -103,5 +104,22 @@ public class FriendInfo {
 	}
 	public void setVisibleFlag(boolean visibleFlag) {
 		this.visibleFlag = visibleFlag;
+	}
+	public ArrayList<String> getCommentContent() {
+		return commentContent;
+	}
+	public void setCommentContent(ArrayList<String> commentContent) {
+		this.commentContent = commentContent;
+	}
+	public void addCommentContent(String comment) {
+		if (commentContent == null) {
+			commentContent = new ArrayList<String>();
+			
+			this.commentContent.add(comment);
+			
+		} else {
+			this.commentContent.add(comment);
+		}
+		
 	}
 }

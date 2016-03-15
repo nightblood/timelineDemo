@@ -11,28 +11,32 @@ import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.zlf.testdemo01.domain.FriendInfo;
 import com.zlf.testdemo01.domain.ImageInfo;
+import com.zlf.testdemo01.domain.MyViewHolder;
 
-import android.app.ActionBar.LayoutParams;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Vibrator;
+import android.text.Spannable;
 import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
+import android.text.style.BackgroundColorSpan;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.ImageSpan;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.PopupWindow;
 import android.widget.TextView;
 
 public class MyItemAdapter extends BaseAdapter{
@@ -74,14 +78,14 @@ public class MyItemAdapter extends BaseAdapter{
 
 	@Override
 	public View getView(final int position, View convertView, ViewGroup arg2) {
-		final ViewHolder holder;
+		final MyViewHolder holder;
 		DisplayImageOptions options;
 		final List<ImageInfo> images;
 		EmotionUtils emotionUtils = new EmotionUtils(context);
 		SpannableString content;
 		
 		if (convertView == null) {
-			holder = new ViewHolder();
+			holder = new MyViewHolder();
 			convertView = View.inflate(context, R.layout.item_list, null);
 			holder.icon = (ImageView) convertView.findViewById(R.id.icon);
 			holder.name = (TextView) convertView.findViewById(R.id.name);
@@ -94,10 +98,12 @@ public class MyItemAdapter extends BaseAdapter{
 			holder.commentBtn = (Button) convertView.findViewById(R.id.comment_button);
 			holder.praiseBtn = (Button) convertView.findViewById(R.id.praise_button);
 			holder.praiseText = (TextView) convertView.findViewById(R.id.praise_text);
+			holder.praiseBar = (TextView) convertView.findViewById(R.id.praise_bar);
+			holder.commentContent = (TextView) convertView.findViewById(R.id.comment_content);
 			
-			convertView.setTag(holder);			
+			convertView.setTag(holder);
 		} else {
-			holder = (ViewHolder) convertView.getTag();
+			holder = (MyViewHolder) convertView.getTag();
 		}
 
 		holder.commentView.setVisibility(View.INVISIBLE);
@@ -107,9 +113,24 @@ public class MyItemAdapter extends BaseAdapter{
 		
 		if (friend.isbPraiseFlag()) {
 			holder.praiseBtn.setBackground(context.getDrawable(R.drawable.red_heart));
+			addPraiseImage(holder.praiseBar);
+			holder.praiseBar.append("开发者");
+			holder.praiseBar.setVisibility(View.VISIBLE);
 		} else {
 			holder.praiseBtn.setBackground(context.getDrawable(R.drawable.icon_like));
+			holder.praiseBar.setText("");
+			holder.praiseBar.setVisibility(View.GONE);
 		}
+		
+		if (friend.getCommentContent() != null) {
+			holder.commentContent.setText("");
+			setCommentContent(holder.commentContent, friend.getCommentContent());
+			holder.commentContent.setVisibility(View.VISIBLE);
+		} else {
+			holder.commentContent.setText("");
+			holder.commentContent.setVisibility(View.INVISIBLE);
+		}
+		
 		holder.name.setText(friend.getName());
 
 		if (datas.get(position).getContent() != null) {
@@ -160,16 +181,20 @@ public class MyItemAdapter extends BaseAdapter{
 
 					String praise = holder.praiseText.getText().toString();
 					if (praise.equals("赞")) {
-						holder.praiseText.setText("取消");
-						
+						holder.praiseText.setText("取消");						
 						holder.praiseBtn.setBackground(context.getDrawable(R.drawable.red_heart));
+						
+						holder.praiseBar.setText("开发者");
 					} else {
 						holder.praiseText.setText("赞");
 						holder.praiseBtn.setBackground(context.getDrawable(R.drawable.icon_like));
+						holder.praiseBar.setText("。。。");
 					}
 
 					holder.commentView.clearAnimation();
 					holder.commentView.setVisibility(View.GONE);
+					holder.praiseBar.setVisibility(View.VISIBLE);
+					
 			}
 		});
 		holder.commentBtn.setOnClickListener(new OnClickListener() {
@@ -199,7 +224,7 @@ public class MyItemAdapter extends BaseAdapter{
 				Message msg = new Message();
 				msg.what = 4;
 				msg.arg1 = position;
-				msg.obj = holder.comment;
+				msg.obj = holder;
 				handler.sendMessage(msg);
 				
 			}
@@ -207,6 +232,41 @@ public class MyItemAdapter extends BaseAdapter{
 		return convertView;
 	}
 
+	private void setCommentContent(TextView commentContent, ArrayList<String> commentList) {
+		String temp;
+		int end = 0;
+		int index;
+		for (int i = 0; i < commentList.size(); ++i) {
+			index = commentList.get(i).indexOf(':');
+			temp = commentList.get(i).substring(0, index);
+			
+			end = temp.length() ;
+			SpannableStringBuilder style = new SpannableStringBuilder(commentList.get(i));
+			style.setSpan(new ForegroundColorSpan(ImageUtils.getResourcesColor(context, R.color.id_color)), 0, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+			
+			commentContent.append(style);
+			if (i != commentList.size() - 1) {
+				commentContent.append("\n"); 
+			} else {
+			}
+		}
+	}
+	private void addPraiseImage(TextView content) {
+		
+		Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.like);
+		bitmap = Bitmap.createScaledBitmap(bitmap, EmotionUtils.dip2px(context, 20), EmotionUtils.dip2px(context, 20),
+				true);
+		Drawable drawable = new BitmapDrawable(bitmap);
+		drawable.setBounds(EmotionUtils.dip2px(context, 1), EmotionUtils.dip2px(context, 1), 
+				EmotionUtils.dip2px(context, 20), EmotionUtils.dip2px(context, 20));
+		ImageSpan imageSpan = new ImageSpan(drawable);
+		SpannableString spannable = new SpannableString("like");
+		spannable.setSpan(imageSpan, 0, 4, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+		
+		content.setText(spannable);
+		content.append(" ");
+	}
+	
 	/**
 	 * 跳转到ImagePagerActivity，显示图片详情
 	 * @param position
@@ -225,18 +285,6 @@ public class MyItemAdapter extends BaseAdapter{
 		
 		context.startActivity(in);
 	}
-	class ViewHolder {
-		private ImageView icon;
-		private TextView name;
-		private TextView content;
-		private NoScrollGridView gridView;
-		private TextView time;
-		private Button comment;
-		
-		private View commentView;
-		private Button commentBtn;
-		private Button praiseBtn;
-		private TextView praiseText;
-//		private EditText commentEdit;
-	}
+
+	
 }

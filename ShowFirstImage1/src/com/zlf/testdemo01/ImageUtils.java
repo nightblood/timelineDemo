@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.regex.Pattern;
 
 import android.content.ContentResolver;
 import android.content.Context;
@@ -12,6 +13,7 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.graphics.Matrix;
 import android.media.ExifInterface;
 import android.net.Uri;
@@ -280,4 +282,34 @@ public class ImageUtils {
 		}
 		return data;
 	}
+	 /**
+     * 将十六进制 颜色代码 转换为 int
+     * 
+     * @return
+     */
+    public static int HextoColor(String color) {
+
+        // #ff00CCFF
+        String reg = "#[a-f0-9A-F]{8}";
+        if (!Pattern.matches(reg, color)) {
+            color = "#00ffffff";
+        }
+
+        return Color.parseColor(color);
+    }
+    /**
+     * 获取资源中的颜色
+     * @param color
+     * @return
+     */
+    public static int getResourcesColor(Context context, int color) {
+
+        int ret = 0x00ffffff;
+        try {
+            ret = context.getResources().getColor(color);
+        } catch (Exception e) {
+        }
+
+        return ret;
+    }
 }

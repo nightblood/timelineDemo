@@ -7,9 +7,11 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import com.lidroid.xutils.db.annotation.Finder;
 import com.zlf.testdemo01.RefreshLayout.OnLoadListener;
 import com.zlf.testdemo01.domain.EmotionInfo;
 import com.zlf.testdemo01.domain.FriendInfo;
+import com.zlf.testdemo01.domain.MyViewHolder;
 import com.zlf.testdemo01.utils.FileUtils;
 import com.zlf.testdemo01.utils.FriendOper;
 
@@ -32,6 +34,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
+import android.view.animation.Animation;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
@@ -39,6 +42,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListAdapter;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -201,6 +205,8 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 			}
 		}
 	};
+	private Button commitPraiseBtn;
+	private TextView praiseContent;
 	
 	/**
 	 * 延迟显示底部导航栏
@@ -215,8 +221,9 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 	}
 	
 	private void showPopupWindow(Message msg) {
-		
 		friend = friendList.get(msg.arg1);
+		final MyViewHolder holder = (MyViewHolder) msg.obj;
+		
 		if (window == null) {
 			View view = View.inflate(MainActivity.this, R.layout.popup_window_comment, null);
 			praiseText = (TextView) view.findViewById(R.id.praise_text);
@@ -243,6 +250,7 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 						praiseBtn.setBackground(MainActivity.this.getDrawable(R.drawable.icon_like));
 						Toast.makeText(MainActivity.this, "已取消点赞", Toast.LENGTH_SHORT).show();
 					}
+					adapter.notifyDataSetChanged();
 					window.dismiss();
 				}
 			});
@@ -259,6 +267,8 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 			});
 
 			window = new MyPopupWindow(view, LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+
+			window.setAnimationStyle(R.style.anim_popup_comment);
 
 			// 需要设置背景，用物理键返回的时候
 			window.setBackgroundDrawable(new BitmapDrawable(MainActivity.this.getResources()));
@@ -287,7 +297,7 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 				praiseText.setText("赞");
 				praiseBtn.setBackgroundResource(R.drawable.icon_like);
 			}
-			window.showAsDropDown((View) msg.obj, -600, -100);
+			window.showAsDropDown((View) (holder).comment, ImageUtils.dip2px(MainActivity.this, -140), ImageUtils.dip2px(MainActivity.this, -25));
 		}
 	};
 
@@ -324,7 +334,8 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 			item.linears[i].setOnClickListener(this);
 			item.images[i] = (ImageView) findViewById(item.images_id[i]);
 			item.texts[i] = (TextView) findViewById(item.texts_id[i]);
-		}		
+		}	
+		
 	}
 
 	private void initTimeLineView() {
@@ -341,6 +352,8 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 		
 		listview.addHeaderView(header);
 		
+		commitPraiseBtn = (Button) timeline.findViewById(R.id.comment_send);
+		commitPraiseBtn.setOnClickListener(this);
 	}
 
 	public void onRefresh() {
@@ -357,6 +370,20 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 	public void onClick(View v) {
 		int viewPagerId = 5;
 		switch (v.getId()) {
+		case R.id.comment_send:
+			String comment = commentEdit.getText().toString();
+			System.out.println("........................" + friend.getId());
+			if (comment == null) {
+				return;
+			} else {
+				friend.addCommentContent("开发者: " + comment);
+			}
+			adapter.notifyDataSetChanged();
+			commentEdit.setText("");
+			Message msg = new Message();
+			msg.what = 2;
+			handler.sendMessage(msg);
+			break;
 		case R.id.button1:
 			Intent it = new Intent();
 			it.setClass(MainActivity.this, PostActivity.class);

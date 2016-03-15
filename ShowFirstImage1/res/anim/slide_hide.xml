@@ -3,7 +3,7 @@
     android:fillAfter="true" >
     <scale
         android:pivotX="100.0%"
-        android:duration="500"
+        android:duration="100"
         android:fromXScale="1.0"
         android:fromYScale="1.0"
         android:toXScale="0.0"

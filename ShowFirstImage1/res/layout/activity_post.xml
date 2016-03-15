@@ -83,8 +83,7 @@
                 android:id="@+id/function_view"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                
-                android:layout_margin="5dp" >
+                android:layout_margin="15dp" >
 
                 <Button
                     android:id="@+id/emotion_btn"
@@ -92,18 +91,26 @@
                     android:layout_height="25dp"
                     android:layout_margin="10dp"
                     android:background="@drawable/emoji" />
+
                 <Button
                     android:id="@+id/at"
                     android:layout_width="25dp"
                     android:layout_height="25dp"
                     android:layout_margin="10dp"
                     android:background="@drawable/at" />
+
                 <Button
                     android:id="@+id/pic"
                     android:layout_width="25dp"
                     android:layout_height="25dp"
                     android:layout_margin="10dp"
                     android:background="@drawable/pic" />
+                <Button
+                    android:id="@+id/loction"
+                    android:layout_width="25dp"
+                    android:layout_height="25dp"
+                    android:layout_margin="10dp"
+                    android:background="@drawable/location" />
             </LinearLayout>
 
             

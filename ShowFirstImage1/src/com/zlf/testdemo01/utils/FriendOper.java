@@ -28,9 +28,11 @@ import com.lidroid.xutils.http.HttpHandler;
 import com.lidroid.xutils.http.ResponseInfo;
 import com.lidroid.xutils.http.callback.RequestCallBack;
 import com.lidroid.xutils.http.client.HttpRequest;
+import com.zlf.testdemo01.ImageUtils;
 import com.zlf.testdemo01.MainActivity;
 import com.zlf.testdemo01.MyItemAdapter;
 import com.zlf.testdemo01.PostActivity;
+import com.zlf.testdemo01.R;
 import com.zlf.testdemo01.domain.EmotionInfo;
 import com.zlf.testdemo01.domain.FriendInfo;
 import com.zlf.testdemo01.domain.ImageInfo;
@@ -187,6 +189,21 @@ public class FriendOper {
 				info.setImageName(jsonItem.getString("image_name"));
 				info.setText("[" + jsonItem.getString("text") + "]");
 				PostActivity.emotionList.add(info);
+			}
+			// 在表情包里添加 删除表情 的图片
+			EmotionInfo delete;
+			int temp = PostActivity.emotionList.size() / 21; // coloum : 7, row : 3
+			int pageCount = PostActivity.emotionList.size() % (21 * temp) == 0 ? temp : temp + 1;
+			for (int i= 1; i < pageCount + 1; ++i) {
+				delete = new EmotionInfo();
+				delete.setImageName("delete.png");
+				delete.setText("删除");
+				delete.emotionPath = context.getApplicationContext().getFilesDir().getAbsolutePath() +  "/emoticon/" + "delete.png";
+				if (i == pageCount) {
+					PostActivity.emotionList.add(delete);
+				} else {
+					PostActivity.emotionList.add(20 * i + i-1, delete);
+				}
 			}
 		} catch (JSONException e) {
 			e.printStackTrace();

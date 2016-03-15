@@ -10,28 +10,15 @@ public class MyPopupWindow extends PopupWindow {
 	private Date missTime = null;
 	public MyPopupWindow(View contentView, int width, int height) {
 		super(contentView, width, height);
-
 	}
 	@Override
 	public void dismiss() {
-//		if (missTime != null) {
-//			Date currTime = new Date(System.currentTimeMillis());
-//			if (currTime.getTime() - missTime.getTime() < 300.0) {
-//				missTime = currTime;
-//			}
-//			else {
-//				super.dismiss();
-//			}
-//			return;
-//		}
 		missTime = new Date(System.currentTimeMillis());
 		super.dismiss();
 	}
 	
-
 	@Override
 	public void showAsDropDown(View anchor, int xoff, int yoff, int gravity) {
-
 		if (missTime != null) {
 			Date currTime = new Date(System.currentTimeMillis());
 			if (currTime.getTime() - missTime.getTime() > 180.0) {
@@ -41,5 +28,4 @@ public class MyPopupWindow extends PopupWindow {
 		}
 		super.showAsDropDown(anchor, xoff, yoff, gravity);
 	}
-	
 }

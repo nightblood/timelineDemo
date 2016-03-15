@@ -107,7 +107,7 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 //	private LinearLayout emojiCursor;
 	private ArrayList<View> cursorViews;
 	private final int REQUEST_CODE_CAPTURE_CAMERA = 0xff0;
-	private PopupWindow emojiWindow;
+	private MyPopupWindow emojiWindow;
 //	private static View emojiView = null;
 
 	public static Handler editTextHandler = new Handler() {
@@ -244,30 +244,42 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 
 	private void initEmojiPopupWindow() {
 		View contentView = LayoutInflater.from(this).inflate(R.layout.popup_window_emoji, null);
-		emojiWindow = new PopupWindow(contentView, ViewGroup.LayoutParams.MATCH_PARENT,
-				ViewGroup.LayoutParams.WRAP_CONTENT, true);
+		emojiWindow = new MyPopupWindow(contentView, ViewGroup.LayoutParams.MATCH_PARENT,
+				ViewGroup.LayoutParams.WRAP_CONTENT);
 		emojiWindow.setFocusable(false);
 		emojiWindow.setTouchable(true);
 		emojiWindow.setOutsideTouchable(true);
 		
-		emojiWindow.setTouchInterceptor(new OnTouchListener() {
-			@Override
-			public boolean onTouch(View v, MotionEvent event) {
-
-				return false;
-			}
-		});
-		emojiWindow.setOnDismissListener(new OnDismissListener() {
-			@Override
-			public void onDismiss() {
-			}
-		});
+		emojiWindow.setAnimationStyle(R.style.anim_popup_dir);
+		
+//		emojiWindow.setTouchInterceptor(new OnTouchListener() {
+//			@Override
+//			public boolean onTouch(View v, MotionEvent event) {
+//
+//				return false;
+//			}
+//		});
+//		emojiWindow.setOnDismissListener(new OnDismissListener() {
+//			@Override
+//			public void onDismiss() {
+//			}
+//		});
 		emojiWindow.setBackgroundDrawable(getResources().getDrawable(R.drawable.shape2));
 		
 		ViewPager viewPager = (ViewPager) contentView.findViewById(R.id.emotion_viewpage);
 		View cursor = contentView.findViewById(R.id.emoji_cursor);
 		LinearLayout emojiCursor = (LinearLayout) contentView.findViewById(R.id.emoji_cursor);
 		initEmojiPageView(viewPager, emojiCursor);
+		
+		contentView.setOnTouchListener(new OnTouchListener() {
+			@Override
+			public boolean onTouch(View v, MotionEvent event) {
+				if (emojiWindow.isShowing()) {
+					emojiWindow.dismiss();
+				}
+				return false;
+			}
+		});
 		
 	}
 
@@ -503,8 +515,7 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 		cursorViews = new ArrayList<View>();
 		for (int i = 0; i < pageCount; ++i) {
 			imageView = new ImageView(this);
-			lp = new LinearLayout.LayoutParams(
-					new ViewGroup.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+			lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
 			lp.leftMargin = ImageUtils.dip2px(this, 5);
 			lp.rightMargin = ImageUtils.dip2px(this, 5);
 			lp.width = ImageUtils.dip2px(this, 5);
@@ -757,18 +768,7 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 		switch (arg0.getId()) {
 		case R.id.emotion_btn:
 			if (new File(MainActivity.emotionPath).exists()) {
-				if (emojiTime == null) {
-					emojiTime = new Date(System.currentTimeMillis());
-					emojiTime.getTime();
-					emojiWindow.showAsDropDown(addEmotion, 0, 10);
-				} else {
-					Date time = new Date(System.currentTimeMillis());
-					if (time.getTime() - emojiTime.getTime() > 10000) {
-						emojiWindow.showAsDropDown(addEmotion, 0, 10);
-						time = null;
-					}
-				}
-				
+				showEmotion();
 			} else {
 				Toast.makeText(PostActivity.this, "没有表情包，请先下载！！！", Toast.LENGTH_SHORT).show();
 			}
@@ -777,11 +777,12 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 	}
 
 	private void showEmotion() {
-//		if (emojiView.getVisibility() == RelativeLayout.VISIBLE) {
-//			emojiView.setVisibility(RelativeLayout.GONE);
-//		} else {
-//			emojiView.setVisibility(RelativeLayout.VISIBLE);
-//		}
+		if (emojiWindow.isShowing()) {
+			
+		} else {
+			emojiWindow.showAsDropDown(addEmotion, 0, 10);
+			
+		}
 	}
 
 }
