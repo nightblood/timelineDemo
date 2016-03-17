@@ -81,12 +81,10 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 	private EditText content;
 	private final int IMAGE_OPEN = 1; // 打开图片标记
 	private List<String> pathImage = new ArrayList<String>();
-	// private List<String> pathImage = ArrayList<String>; // 选择图片路径
-//	private Bitmap bmp; // 导入临时图片
 	private ArrayList<HashMap<String, Object>> imageItem;
 	private SimpleAdapter simpleAdapter; // 适配器
 	private static String actionUrl = "http://client.e0575.com/quanzi/app.php?c=quanzi&a=topicadd";
-	private Button addEmotion;
+	private static Button addEmotion;
 	public static List<EmotionInfo> emotionList;
 	private RelativeLayout emojiLayout;
 	private static ViewPager viewPager = null;
@@ -107,17 +105,21 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 //	private LinearLayout emojiCursor;
 	private ArrayList<View> cursorViews;
 	private final int REQUEST_CODE_CAPTURE_CAMERA = 0xff0;
-	private MyPopupWindow emojiWindow;
+	private final int REQUEST_CODE_GET_LOCATION = 0xff1;
+	private MyEmojiPopupWindow emojiWindow;
+	private Button locationBtn;
 //	private static View emojiView = null;
+	private TextView locationContent;
 
 	public static Handler editTextHandler = new Handler() {
 		public void handleMessage(android.os.Message msg) {
 			if (msg.what == 3) {
 				// 隐藏输入法后必须隐藏表情页
 				bInputVisiable = false;
-//				if (emojiView.getVisibility() == View.VISIBLE) {
-//					emojiView.setVisibility(View.INVISIBLE);
-//				}
+			} else if (msg.what == 2){
+				addEmotion.setBackgroundResource(R.drawable.emoji);
+			} else if (msg.what == 1) {
+				addEmotion.setBackgroundResource(R.drawable.emoji_showed);
 			}
 		};
 	};
@@ -244,7 +246,7 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 
 	private void initEmojiPopupWindow() {
 		View contentView = LayoutInflater.from(this).inflate(R.layout.popup_window_emoji, null);
-		emojiWindow = new MyPopupWindow(contentView, ViewGroup.LayoutParams.MATCH_PARENT,
+		emojiWindow = new MyEmojiPopupWindow(contentView, ViewGroup.LayoutParams.MATCH_PARENT,
 				ViewGroup.LayoutParams.WRAP_CONTENT);
 		emojiWindow.setFocusable(false);
 		emojiWindow.setTouchable(true);
@@ -252,18 +254,6 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 		
 		emojiWindow.setAnimationStyle(R.style.anim_popup_dir);
 		
-//		emojiWindow.setTouchInterceptor(new OnTouchListener() {
-//			@Override
-//			public boolean onTouch(View v, MotionEvent event) {
-//
-//				return false;
-//			}
-//		});
-//		emojiWindow.setOnDismissListener(new OnDismissListener() {
-//			@Override
-//			public void onDismiss() {
-//			}
-//		});
 		emojiWindow.setBackgroundDrawable(getResources().getDrawable(R.drawable.shape2));
 		
 		ViewPager viewPager = (ViewPager) contentView.findViewById(R.id.emotion_viewpage);
@@ -433,6 +423,11 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 		addEmotion = (Button) findViewById(R.id.emotion_btn);
 		addEmotion.setOnClickListener(this);
 		gridView1 = (GridView) findViewById(R.id.gridView);
+		
+		locationBtn = (Button) findViewById(R.id.location);
+		locationBtn.setOnClickListener(this);
+		locationContent = (TextView) findViewById(R.id.location_content);
+		
 		inputManager = (InputMethodManager) content.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
 	}
 
@@ -546,7 +541,6 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 				imageFiles.add(new File(pathImage.get(i)));
 			}
 		} else if (requestCode == REQUEST_CODE_CAPTURE_CAMERA) {
-			System.out.println("得到返回的结果");
 			if (data == null)
 				return;
 			Uri uri = data.getData();
@@ -561,6 +555,14 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 			pathImage.add(ImageUtils.getRealFilePath(this, uri));
 
 			imageFiles.add(new File(pathImage.get(0)));
+		} else if (requestCode == REQUEST_CODE_GET_LOCATION) {
+			if (data == null)
+				return;
+			Bundle bundle = data.getExtras();
+			if (bundle == null) 
+				return;
+			locationContent.setText((CharSequence) bundle.get("location"));
+			locationBtn.setBackgroundResource(R.drawable.location_showed);
 		}
 	}
 
@@ -763,9 +765,16 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 		return spannable;
 	}
 
+	
 	@Override
 	public void onClick(View arg0) {
 		switch (arg0.getId()) {
+		case R.id.location:
+			Intent intent = new Intent();
+			intent.setClass(PostActivity.this, LocationActivity.class);
+//			startActivity(intent);
+			startActivityForResult(intent, REQUEST_CODE_GET_LOCATION);
+			break;
 		case R.id.emotion_btn:
 			if (new File(MainActivity.emotionPath).exists()) {
 				showEmotion();
@@ -778,10 +787,10 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 
 	private void showEmotion() {
 		if (emojiWindow.isShowing()) {
-			
+//			addEmotion.setBackgroundResource(R.drawable.emoji);
 		} else {
 			emojiWindow.showAsDropDown(addEmotion, 0, 10);
-			
+//			addEmotion.setBackgroundResource(R.drawable.emoji_showed);	
 		}
 	}
 

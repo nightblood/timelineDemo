@@ -68,7 +68,7 @@
             android:layout_alignBottom="@+id/comment_edit"
             android:layout_alignParentRight="true"
             android:background="#cc0000"
-            android:text="·¢ËÍ" />
+            android:text="å‘é€" />
     </RelativeLayout>
 
 </com.zlf.testdemo01.MyLayout>

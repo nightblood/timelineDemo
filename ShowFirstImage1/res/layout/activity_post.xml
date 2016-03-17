@@ -83,36 +83,44 @@
                 android:id="@+id/function_view"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="15dp" >
+                android:gravity="center_vertical"
+                android:layout_margin="12dp" >
 
                 <Button
                     android:id="@+id/emotion_btn"
                     android:layout_width="25dp"
                     android:layout_height="25dp"
-                    android:layout_margin="10dp"
+                    android:layout_margin="8dp"
                     android:background="@drawable/emoji" />
 
                 <Button
                     android:id="@+id/at"
                     android:layout_width="25dp"
                     android:layout_height="25dp"
-                    android:layout_margin="10dp"
+                    android:layout_margin="8dp"
                     android:background="@drawable/at" />
 
                 <Button
                     android:id="@+id/pic"
                     android:layout_width="25dp"
                     android:layout_height="25dp"
-                    android:layout_margin="10dp"
+                    android:layout_margin="8dp"
                     android:background="@drawable/pic" />
+
                 <Button
-                    android:id="@+id/loction"
+                    android:id="@+id/location"
                     android:layout_width="25dp"
                     android:layout_height="25dp"
-                    android:layout_margin="10dp"
+                    android:layout_margin="8dp"
                     android:background="@drawable/location" />
-            </LinearLayout>
 
+                <TextView
+                    android:id="@+id/location_content"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="12dp"
+                    android:text="" />
+            </LinearLayout>
             
             <!-- 添加要上传的图片 -->
 
