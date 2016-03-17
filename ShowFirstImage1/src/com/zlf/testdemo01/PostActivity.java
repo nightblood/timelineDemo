@@ -16,6 +16,7 @@ import com.lidroid.xutils.http.callback.RequestCallBack;
 import com.lidroid.xutils.http.client.HttpRequest;
 import com.zlf.testdemo01.domain.EmotionInfo;
 
+import android.animation.ObjectAnimator;
 import android.app.ActionBar.LayoutParams;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -49,6 +50,9 @@ import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.ScaleAnimation;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
@@ -110,6 +114,8 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 	private Button locationBtn;
 //	private static View emojiView = null;
 	private TextView locationContent;
+	private Button atBtn;
+	private Button picBtn;
 
 	public static Handler editTextHandler = new Handler() {
 		public void handleMessage(android.os.Message msg) {
@@ -141,6 +147,8 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 
 		initView();
 
+		picBtn.setOnClickListener(this);
+		atBtn.setOnClickListener(this);
 		if (emotionList != null) {
 //			initPageView();
 		}
@@ -351,6 +359,9 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 		View contentView = LayoutInflater.from(this).inflate(R.layout.popup_window_add_button, null);
 		final PopupWindow window = new PopupWindow(contentView, ViewGroup.LayoutParams.WRAP_CONTENT,
 				ViewGroup.LayoutParams.WRAP_CONTENT, true);
+		
+		window.setAnimationStyle(R.style.anim_popup_add_picture);
+		
 		window.setTouchable(true);
 		window.setTouchInterceptor(new OnTouchListener() {
 			@Override
@@ -429,6 +440,8 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 		locationContent = (TextView) findViewById(R.id.location_content);
 		
 		inputManager = (InputMethodManager) content.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+		atBtn = (Button) findViewById(R.id.at);
+		picBtn = (Button) findViewById(R.id.pic);
 	}
 
 	// 表情页显示
@@ -774,6 +787,7 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 			intent.setClass(PostActivity.this, LocationActivity.class);
 //			startActivity(intent);
 			startActivityForResult(intent, REQUEST_CODE_GET_LOCATION);
+			overridePendingTransition(R.anim.in_from_right, R.anim.out_to_left);
 			break;
 		case R.id.emotion_btn:
 			if (new File(MainActivity.emotionPath).exists()) {
@@ -781,6 +795,13 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 			} else {
 				Toast.makeText(PostActivity.this, "没有表情包，请先下载！！！", Toast.LENGTH_SHORT).show();
 			}
+			break;
+		case R.id.at:
+			atBtn.setBackgroundResource(R.drawable.at_selected);
+			Toast.makeText(PostActivity.this, "待开发！！！", Toast.LENGTH_SHORT).show();
+			break;
+		case R.id.pic:
+			Toast.makeText(PostActivity.this, "待开发！！！", Toast.LENGTH_SHORT).show();
 			break;
 		}
 	}
@@ -794,4 +815,9 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 		}
 	}
 
+	@Override
+	public void finish() {
+		super.finish();
+		overridePendingTransition(R.anim.in_from_left, R.anim.out_to_right);
+	}
 }

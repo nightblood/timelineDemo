@@ -3,14 +3,15 @@ package com.zlf.testdemo01;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import com.lidroid.xutils.db.annotation.Finder;
 import com.zlf.testdemo01.RefreshLayout.OnLoadListener;
 import com.zlf.testdemo01.domain.EmotionInfo;
 import com.zlf.testdemo01.domain.FriendInfo;
+import com.zlf.testdemo01.domain.MsgInfo;
 import com.zlf.testdemo01.domain.MyViewHolder;
 import com.zlf.testdemo01.utils.FileUtils;
 import com.zlf.testdemo01.utils.FriendOper;
@@ -34,15 +35,15 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
-import android.view.animation.Animation;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListAdapter;
 import android.widget.ListView;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -50,7 +51,7 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 		OnLoadListener, OnGestureListener, OnTouchListener, OnPageChangeListener {
 
 	private final static int DELAY_TIME = 200;
-//	private HttpClient client;
+	// private HttpClient client;
 	public static List<FriendInfo> friendList = new ArrayList<FriendInfo>();
 	// private List<EmotionInfo> emotionList;
 	private ListView listview;
@@ -59,21 +60,21 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 	private Button button;
 	private Button download;
 	public static String localPath;
-	public static String emotionPath; // Ñ¹Ëõ°üÂ·¾¶
-	public static String emotionDataPath; // emotion.txt ±íÇé°ü¶ÔÓ¦Êı¾İÂ·¾¶
-//	private TextView testText;
+	public static String emotionPath; // å‹ç¼©åŒ…è·¯å¾„
+	public static String emotionDataPath; // emotion.txt è¡¨æƒ…åŒ…å¯¹åº”æ•°æ®è·¯å¾„
+	// private TextView testText;
 	public static boolean flagHasData = false;
 	public static String eMotionData;
 
 	private RefreshLayout mSwipeLayout;
-//	private PullToRefreshListView mSwipeLayout;
+	// private PullToRefreshListView mSwipeLayout;
 	private static final int REFRESH_COMPLETE = 0X110;
 	public static int ON_LOAD = 0;
 	public static int ON_REFERSH = 1;
 	public static int pageNum = 1;
 	public static boolean bInputVisiable = false;
-//	private View popupView;
-//	private EditText editComment;
+	// private View popupView;
+	// private EditText editComment;
 	// private ImageView commentBtn;
 	private Button commentBtn;
 	private static View commentView;
@@ -84,20 +85,20 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 	public static boolean bScrolling = false;
 	public static View commentListView = null;
 	private MyPopupWindow window = null;
-//	private static boolean popupIsShowing = false;
-//	private Date preTime = null;
-//	private Date currTime = null;
+	// private static boolean popupIsShowing = false;
+	// private Date preTime = null;
+	// private Date currTime = null;
 	private static Date backTime = null;
-	
+
 	private FriendOper friendUtils = null;
-	
+
 	private View header;
 	private TextView praiseText = null;
 	private Button praiseBtn = null;
 	private FriendInfo friend = null;
 	private ViewPager viewPager;
 	private ViewPagerAdapter viewAdapter;
-	
+	private Button commitPraiseBtn;
 	private BottomViewItem item;
 	private ArrayList<View> mViewItems = new ArrayList<View>();
 	private final int TIMELINE_ID = 2;
@@ -109,7 +110,7 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 		public void handleMessage(Message msg) {
 			switch (msg.what) {
 			case 2:
-				// ´¦Àíµã»÷·µ»Ø¼üÊÂ¼ş£¬Òş²ØEditText ºÍĞéÄâ¼üÅÌ
+				// å¤„ç†ç‚¹å‡»è¿”å›é”®äº‹ä»¶ï¼Œéšè—EditText å’Œè™šæ‹Ÿé”®ç›˜
 				if (commentView.getVisibility() == View.VISIBLE) {
 					commentView.setVisibility(View.INVISIBLE);
 					delayShowBottomLayout(editTextHandler);
@@ -120,19 +121,18 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 				commentView.setVisibility(View.INVISIBLE);
 				delayShowBottomLayout(editTextHandler);
 			}
-			
 		}
 	};
-	
+
 	public Handler handler = new Handler() {
 		public void handleMessage(android.os.Message msg) {
 			switch (msg.what) {
 			case 1:
-				// ´¦Àíµã»÷·¢±íÆÀÂÛ°´Å¥ÊÂÎñ
+				// å¤„ç†ç‚¹å‡»å‘è¡¨è¯„è®ºæŒ‰é’®äº‹åŠ¡
 				if (commentView.getVisibility() != View.VISIBLE) {
 					commentView.setVisibility(View.VISIBLE);
 					bottomLayout.setVisibility(View.INVISIBLE);
-					// ÉèÖÃ½¹µã
+					// è®¾ç½®ç„¦ç‚¹
 					commentEdit.setFocusable(true);
 					commentEdit.setFocusableInTouchMode(true);
 					commentEdit.requestFocus();
@@ -141,24 +141,24 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 						Timer timer = new Timer();
 						timer.schedule(new TimerTask() {
 							public void run() {
-								// ÏÔÊ¾ĞéÄâ¼üÅÌÊäÈë·¨
+								// æ˜¾ç¤ºè™šæ‹Ÿé”®ç›˜è¾“å…¥æ³•
 								inputManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
 							}
 						}, 50);
 					}
-					// µ÷Õû listviewÖĞitemµÄÎ»ÖÃ£¬Ê¹ÆäÔÚ±à¼­¿òµÄÉÏ·½¡£
+					// è°ƒæ•´ listviewä¸­itemçš„ä½ç½®ï¼Œä½¿å…¶åœ¨ç¼–è¾‘æ¡†çš„ä¸Šæ–¹ã€‚
 				} else {
-					// µã»÷ÆÀÂÛ°´Å¥ÒÑ¾­ÏÔÊ¾±à¼­ÇøµÄÇé¿öÏÂ£¬Òş²ØÆÀÂÛ±à¼­Çø²¢ÇÒÒş²ØĞéÄâ¼üÅÌ
+					// ç‚¹å‡»è¯„è®ºæŒ‰é’®å·²ç»æ˜¾ç¤ºç¼–è¾‘åŒºçš„æƒ…å†µä¸‹ï¼Œéšè—è¯„è®ºç¼–è¾‘åŒºå¹¶ä¸”éšè—è™šæ‹Ÿé”®ç›˜
 					commentView.setVisibility(View.INVISIBLE);
 					delayShowBottomLayout(handler);
-					
+
 					if (bInputVisiable == true)
 						inputManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
 				}
-			
+
 				break;
 			case 2:
-				// ´¦Àíµã»÷·µ»Ø¼üÊÂ¼ş£¬Òş²ØEditText ºÍĞéÄâ¼üÅÌ
+				// å¤„ç†ç‚¹å‡»è¿”å›é”®äº‹ä»¶ï¼Œéšè—EditText å’Œè™šæ‹Ÿé”®ç›˜
 				if (commentView.getVisibility() == View.VISIBLE) {
 					commentView.setVisibility(View.INVISIBLE);
 					delayShowBottomLayout(handler);
@@ -166,21 +166,21 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 
 				if (bInputVisiable == true)
 					inputManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
-			
+
 				break;
 			case 3:
 				View view = (View) msg.obj;
 				if (view.getVisibility() == View.VISIBLE) {
 					view.setVisibility(View.INVISIBLE);
 				}
-			
+
 				break;
 			case 4:
 				showPopupWindow(msg);
 				break;
 			case 5:
 				mSwipeLayout.setLoading(false);
-				
+
 				break;
 			case 6:
 				mSwipeLayout.setRefreshing(false);
@@ -189,12 +189,12 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 				adapter.notifyDataSetChanged();
 				break;
 			case 8:
-				// »¬¶¯Ê±£¬Òş²ØÆÀÂÛ±à¼­¿ò£¬²¢ÇÒÏÔÊ¾µ×²¿µ¼º½À¸
+				// æ»‘åŠ¨æ—¶ï¼Œéšè—è¯„è®ºç¼–è¾‘æ¡†ï¼Œå¹¶ä¸”æ˜¾ç¤ºåº•éƒ¨å¯¼èˆªæ 
 				commentView.setVisibility(View.INVISIBLE);
 				delayShowBottomLayout(handler);
 				break;
 			case 9:
-				// ÒÑÏÔÊ¾ÆÀÂÛ±à¼­¿òÇ°ÌáÏÂ£¬µã»÷ÅóÓÑÈ¦Í¼Æ¬£¬»òÕßÆäËû¿Ø¼ş£¬ĞèÒªÒş²Ø±à¼­¿ò£¬²¢ÇÒÏÔÊ¾µ×²¿µ¼º½À¸
+				// å·²æ˜¾ç¤ºè¯„è®ºç¼–è¾‘æ¡†å‰æä¸‹ï¼Œç‚¹å‡»æœ‹å‹åœˆå›¾ç‰‡ï¼Œæˆ–è€…å…¶ä»–æ§ä»¶ï¼Œéœ€è¦éšè—ç¼–è¾‘æ¡†ï¼Œå¹¶ä¸”æ˜¾ç¤ºåº•éƒ¨å¯¼èˆªæ 
 				if (commentView.getVisibility() == View.VISIBLE) {
 					commentView.setVisibility(View.INVISIBLE);
 					delayShowBottomLayout(handler);
@@ -205,11 +205,9 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 			}
 		}
 	};
-	private Button commitPraiseBtn;
-	private TextView praiseContent;
-	
+
 	/**
-	 * ÑÓ³ÙÏÔÊ¾µ×²¿µ¼º½À¸
+	 * å»¶è¿Ÿæ˜¾ç¤ºåº•éƒ¨å¯¼èˆªæ 
 	 */
 	private static void delayShowBottomLayout(Handler handler) {
 		handler.postDelayed(new Runnable() {
@@ -219,11 +217,11 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 			}
 		}, DELAY_TIME);
 	}
-	
+
 	private void showPopupWindow(Message msg) {
 		friend = friendList.get(msg.arg1);
 		final MyViewHolder holder = (MyViewHolder) msg.obj;
-		
+
 		if (window == null) {
 			View view = View.inflate(MainActivity.this, R.layout.popup_window_comment, null);
 			praiseText = (TextView) view.findViewById(R.id.praise_text);
@@ -239,16 +237,16 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 					vibrator.vibrate(50);
 
 					String praise = praiseText.getText().toString();
-					if (praise.equals("ÔŞ")) {
+					if (praise.equals("èµ")) {
 						friend.setPraiseFlag(true);
-						praiseText.setText("È¡Ïû");
+						praiseText.setText("å–æ¶ˆ");
 						praiseBtn.setBackground(MainActivity.this.getDrawable(R.drawable.red_heart));
-						Toast.makeText(MainActivity.this, "ÒÑµãÔŞ", Toast.LENGTH_SHORT).show();
+						Toast.makeText(MainActivity.this, "å·²ç‚¹èµ", Toast.LENGTH_SHORT).show();
 					} else {
 						friend.setPraiseFlag(false);
-						praiseText.setText("ÔŞ");
+						praiseText.setText("èµ");
 						praiseBtn.setBackground(MainActivity.this.getDrawable(R.drawable.icon_like));
-						Toast.makeText(MainActivity.this, "ÒÑÈ¡ÏûµãÔŞ", Toast.LENGTH_SHORT).show();
+						Toast.makeText(MainActivity.this, "å·²å–æ¶ˆç‚¹èµ", Toast.LENGTH_SHORT).show();
 					}
 					adapter.notifyDataSetChanged();
 					window.dismiss();
@@ -270,14 +268,14 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 
 			window.setAnimationStyle(R.style.anim_popup_comment);
 
-			// ĞèÒªÉèÖÃ±³¾°£¬ÓÃÎïÀí¼ü·µ»ØµÄÊ±ºò
+			// éœ€è¦è®¾ç½®èƒŒæ™¯ï¼Œç”¨ç‰©ç†é”®è¿”å›çš„æ—¶å€™
 			window.setBackgroundDrawable(new BitmapDrawable(MainActivity.this.getResources()));
 
 			window.setFocusable(false);
 			window.setTouchable(true);
 			window.setOutsideTouchable(true);
 
-			view.setOnTouchListener(new OnTouchListener() {// ĞèÒªÉèÖÃ£¬µã»÷Ö®ºóÈ¡Ïûpopupview£¬¼´Ê¹µã»÷ÍâÃæ£¬Ò²¿ÉÒÔ²¶»ñÊÂ¼ş
+			view.setOnTouchListener(new OnTouchListener() {// éœ€è¦è®¾ç½®ï¼Œç‚¹å‡»ä¹‹åå–æ¶ˆpopupviewï¼Œå³ä½¿ç‚¹å‡»å¤–é¢ï¼Œä¹Ÿå¯ä»¥æ•è·äº‹ä»¶
 															// {
 				public boolean onTouch(View v, MotionEvent event) {
 					if (window.isShowing()) {
@@ -291,13 +289,14 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 			window.dismiss();
 		} else {
 			if (friend.isbPraiseFlag()) {
-				praiseText.setText("È¡Ïû");
+				praiseText.setText("å–æ¶ˆ");
 				praiseBtn.setBackgroundResource(R.drawable.red_heart);
 			} else {
-				praiseText.setText("ÔŞ");
+				praiseText.setText("èµ");
 				praiseBtn.setBackgroundResource(R.drawable.icon_like);
 			}
-			window.showAsDropDown((View) (holder).comment, ImageUtils.dip2px(MainActivity.this, -140), ImageUtils.dip2px(MainActivity.this, -25));
+			window.showAsDropDown((View) (holder).comment, ImageUtils.dip2px(MainActivity.this, -140),
+					ImageUtils.dip2px(MainActivity.this, -25));
 		}
 	};
 
@@ -306,10 +305,13 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 
-		ImageUtils.res2file(this, R.drawable.emoji_delete, getApplicationContext().getFilesDir().getAbsolutePath() + "/emoticon/" + "delete.png");
+		ImageUtils.res2file(this, R.drawable.emoji_delete,
+				getApplicationContext().getFilesDir().getAbsolutePath() + "/emoticon/" + "delete.png");
 		item = BottomViewItem.getInstance();
-		
-		initView();		
+
+		initView();
+
+		initMsgView();
 
 		setTabSelection(0);
 		System.out.println("onCreate end!");
@@ -317,11 +319,11 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 
 	private void initView() {
 		bottomLayout = findViewById(R.id.bottom_layout);
-		
+
 		viewPager = (ViewPager) findViewById(R.id.main_viewpager);
 		for (int i = 0; i < item.viewNum; i++) {
 			if (i != TIMELINE_ID) {
-				mViewItems.add(getLayoutInflater().inflate(item.layouts_id[i], null));				
+				mViewItems.add(getLayoutInflater().inflate(item.layouts_id[i], null));
 			} else {
 				mViewItems.add(getLayoutInflater().inflate(R.layout.listview, null));
 			}
@@ -334,24 +336,89 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 			item.linears[i].setOnClickListener(this);
 			item.images[i] = (ImageView) findViewById(item.images_id[i]);
 			item.texts[i] = (TextView) findViewById(item.texts_id[i]);
-		}	
-		
+		}
+	}
+
+	private ListView msgListView;
+	private List<MsgInfo> msgList = new ArrayList<MsgInfo>();
+	private MyMsgAdapter msgAdapter;
+
+	private void initMsgView() {
+		View msgView = mViewItems.get(0);
+		msgListView = (ListView) msgView.findViewById(R.id.msg_listview);
+		msgListView.setOnItemClickListener(new OnItemClickListener() {
+			@Override
+			public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
+				Intent intent = new Intent();
+				Bundle bundle = new Bundle();
+				
+				bundle.putStringArray("data", (String[]) msgList.get(arg2).getContentList()
+						.toArray(new String[msgList.get(arg2).getContentList().size()]));
+				bundle.putStringArrayList("data", (ArrayList<String>) msgList.get(arg2).getContentList());
+				intent.putExtras(bundle);
+				intent.setClass(MainActivity.this, ChatActivity.class);
+				
+				startActivity(intent);
+				overridePendingTransition(R.anim.in_from_right, R.anim.out_to_left);
+			}
+		});
+		msgAdapter = new MyMsgAdapter(MainActivity.this, msgList);
+		msgListView.setAdapter(msgAdapter);
+		getMsgDatas();
+		msgAdapter.notifyDataSetChanged();
+	}
+
+	private void getMsgDatas() {
+		MsgInfo msgInfo;
+		List<String> contentList = new ArrayList<String>();
+		contentList.add("left:....");
+		contentList.add("left:æ¯”å¦‚è¯´å‘¢ï¼Ÿ");
+		contentList.add("right:æ‰¾å‘€æ‰¾å‘€æ‰¾æœ‹å‹ï¼Œæ‰¾åˆ°ä¸€ä¸ªå¥½æœ‹å‹ï¼Œæ•¬ä¸ªç¤¼ï¼Œæ¡ä¸ªæ‰‹ï¼Œä½ æ˜¯æˆ‘çš„å¥½æœ‹å‹");
+		contentList.add("left:ä»€ä¹ˆæ„æ€");
+		contentList.add("right:ä½ èƒ½æ§åˆ¶ä½è‡ªå·±ä¸æŠŠå®ƒå”±å‡ºæ¥å—");
+		contentList.add("left:....");
+		contentList.add("right:ä½ èƒ½æ§åˆ¶ä½è‡ªå·±ä¸æŠŠå®ƒå”±å‡ºæ¥å—");
+		contentList.add("left:....");
+		contentList.add("right:ä½ èƒ½æ§åˆ¶ä½è‡ªå·±ä¸æŠŠå®ƒå”±å‡ºæ¥å—");
+		contentList.add("left:....");
+		contentList.add("right:ä½ èƒ½æ§åˆ¶ä½è‡ªå·±ä¸æŠŠå®ƒå”±å‡ºæ¥å—????????????????????????????????????????????");
+		contentList.add("left:....");
+		contentList.add("left:....");
+		contentList.add("left:....");
+		contentList.add("left:....");
+		contentList.add("left:....");
+		contentList.add("left:....");
+		contentList.add("left:....");
+		contentList.add("left:....");
+		contentList.add("left:....");
+		contentList.add("left:....");
+		contentList.add("left:....");
+
+		for (int i = 0; i < 1; ++i) {
+			msgInfo = new MsgInfo();
+			msgInfo.setFriendId(i);
+			msgInfo.setFriendName("å¥”æ³¢å„¿ç");
+			msgInfo.setIconImage("");
+			msgInfo.setContentList(contentList);
+			msgList.add(msgInfo);
+		}
 	}
 
 	private void initTimeLineView() {
 		View timeline = mViewItems.get(TIMELINE_ID);
 		header = View.inflate(this, R.layout.listview_header, null);
 		commentView = timeline.findViewById(R.id.comment_view);
-//		commentEdit = (IgnoreSoftKeyboardEditText) findViewById(R.id.comment_edit);
+		// commentEdit = (IgnoreSoftKeyboardEditText)
+		// findViewById(R.id.comment_edit);
 		commentEdit = (EditText) timeline.findViewById(R.id.comment_edit);
 		commentBtn = (Button) timeline.findViewById(R.id.comment_send);
 		mSwipeLayout = (RefreshLayout) timeline.findViewById(R.id.id_swipe_ly);
 		listview = (ListView) timeline.findViewById(R.id.lv);
 		button = (Button) header.findViewById(R.id.button1);
 		download = (Button) header.findViewById(R.id.download_btn);
-		
+
 		listview.addHeaderView(header);
-		
+
 		commitPraiseBtn = (Button) timeline.findViewById(R.id.comment_send);
 		commitPraiseBtn.setOnClickListener(this);
 	}
@@ -360,12 +427,13 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 		pageNum = 1;
 		friendUtils.getTimeLineData(ON_REFERSH);
 	}
+
 	@Override
 	public void onLoad() {
-		// ¶ÁÈ¡ÏÂÒ»Ò³ÅóÓÑÈ¦Êı¾İ
+		// è¯»å–ä¸‹ä¸€é¡µæœ‹å‹åœˆæ•°æ®
 		friendUtils.getTimeLineData(ON_LOAD);
 	}
-	
+
 	@Override
 	public void onClick(View v) {
 		int viewPagerId = 5;
@@ -376,7 +444,7 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 			if (comment == null) {
 				return;
 			} else {
-				friend.addCommentContent("¿ª·¢Õß: " + comment);
+				friend.addCommentContent("å¼€å‘è€…: " + comment);
 			}
 			adapter.notifyDataSetChanged();
 			commentEdit.setText("");
@@ -389,10 +457,11 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 			it.setClass(MainActivity.this, PostActivity.class);
 
 			startActivityForResult(it, 100);
+			overridePendingTransition(R.anim.in_from_right, R.anim.out_to_left);
 			break;
 		case R.id.download_btn:
 			if (new File(emotionPath).exists()) {
-				Toast.makeText(MainActivity.this, "±íÇé°üÒÑÏÂÔØ!!", Toast.LENGTH_LONG).show();
+				Toast.makeText(MainActivity.this, "è¡¨æƒ…åŒ…å·²ä¸‹è½½!!", Toast.LENGTH_LONG).show();
 			} else {
 				friendUtils.downloadEmotionImages();
 				friendUtils.readNet(FriendOper.EMOTION_URL);
@@ -401,7 +470,7 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 		case R.id.message_layout:
 			viewPagerId = 0;
 			break;
-		case R.id.contacts_layout:  
+		case R.id.contacts_layout:
 			viewPagerId = 1;
 			break;
 		case R.id.news_layout:
@@ -422,19 +491,18 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 			viewPager.setCurrentItem(viewPagerId);
 			setTabSelection(viewPagerId);
 			if (viewPagerId != TIMELINE_ID) {
-				firstClickFlag = false;				
+				firstClickFlag = false;
 			} else {
 				firstClickFlag = true;
 			}
 		}
 	}
 
-
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
 
 		if (event.getAction() == MotionEvent.ACTION_UP) {
-//			System.out.println("----------------action up--------------");
+			// System.out.println("----------------action up--------------");
 			bScrolling = false;
 		}
 		return super.onTouchEvent(event);
@@ -452,7 +520,7 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 	}
 
 	/*
-	 * »¬¶¯Ê±£¬Òş²ØÆÀÂÛ±à¼­ÇøºÍÊäÈë·¨
+	 * æ»‘åŠ¨æ—¶ï¼Œéšè—è¯„è®ºç¼–è¾‘åŒºå’Œè¾“å…¥æ³•
 	 */
 	@Override
 	public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
@@ -462,7 +530,7 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 	}
 
 	/*
-	 *  »¬¶¯Ê±£¬Òş²ØÆÀÂÛ±à¼­ÇøºÍÊäÈë·¨
+	 * æ»‘åŠ¨æ—¶ï¼Œéšè—è¯„è®ºç¼–è¾‘åŒºå’Œè¾“å…¥æ³•
 	 */
 	@Override
 	public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
@@ -472,7 +540,7 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 			msg.what = 8;
 			handler.sendMessage(msg);
 		}
-		
+
 		if (bInputVisiable == true && bScrolling != true) {
 			inputManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
 			bScrolling = false;
@@ -501,13 +569,11 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 
 	@Override
 	protected void onResume() {
-
 		super.onResume();
 	}
 
 	@Override
 	protected void onStart() {
-
 		super.onStart();
 	}
 
@@ -528,10 +594,10 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 			}
 			if (backTime != null) {
 				Date time = new Date(System.currentTimeMillis());
-				
+
 				if (time.getTime() - backTime.getTime() < 100) {
 					return true;
-				}				
+				}
 			}
 		}
 		return super.onKeyDown(keyCode, event);
@@ -540,13 +606,12 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 	@Override
 	public void onPageScrollStateChanged(int arg0) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void onPageScrolled(int arg0, float arg1, int arg2) {
 		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
@@ -555,12 +620,12 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 		if (arg0 == TIMELINE_ID && onLoadedFlag == false) {
 			onLoadedFlag = true;
 			initTimeLineView();
-			
+
 			inputManager = (InputMethodManager) commentEdit.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
 
 			mSwipeLayout.setOnRefreshListener(this);
 			mSwipeLayout.setOnLoadListener(this);
-			
+
 			localPath = getApplicationContext().getFilesDir().getAbsolutePath();
 			emotionPath = localPath + "/emotion.zip";
 			emotionDataPath = localPath + "/emotion.txt";
@@ -573,15 +638,15 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 
 			dector = new GestureDetector(this);
 			listview.setOnTouchListener(this);
-			
+
 			friendUtils = new FriendOper(this, handler, adapter);
 
 			EmotionInfo.emotionPath = localPath + "/emoticon/";
 			File emotionDataFile = new File(emotionDataPath);
 			if (emotionDataFile.exists()) {
-				// ½âÎö±íÇé°üÊı¾İ
-				String emotionData = FileUtils.readFileByChars(localPath + "/emotion.txt");
-				friendUtils.getEmotionList(emotionData);
+				// è§£æè¡¨æƒ…åŒ…æ•°æ®
+//				String emotionData = FileUtils.readFileByChars(localPath + "/emotion.txt");
+				PostActivity.emotionList = friendUtils.getEmotionList();
 			}
 
 			friendUtils.getTimeLineData(ON_REFERSH);
@@ -600,6 +665,7 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 			item.texts[i].setTextColor(getResources().getColor(R.color.bottom_text_unselected));
 		}
 	}
+
 	@Override
 	protected void onPause() {
 		if (commentView != null && commentView.getVisibility() == View.VISIBLE) {

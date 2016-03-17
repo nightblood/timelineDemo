@@ -146,11 +146,11 @@ public class FriendOper {
 						adapter.notifyDataSetChanged();
 
 					} else if (urlStr.equals(EMOTION_URL)) {
-						PostActivity.emotionList = getEmotionList(val);
 						// appendFile(localPath + "emotion.txt", val);
 						FileUtils.appendFile(MainActivity.emotionDataPath, val);
 						// appendFile("/sdcard/emotion.txt",
 						// "----------------");
+						PostActivity.emotionList = getEmotionList();
 					}
 					return val;
 				} catch (Exception e) {
@@ -167,12 +167,15 @@ public class FriendOper {
 	 * @param jsonStr
 	 * @return
 	 */
-	public List<EmotionInfo> getEmotionList(String jsonStr) {
+	public List<EmotionInfo> getEmotionList() {
+		String path = context.getApplicationContext().getFilesDir().getAbsolutePath() + "/emotion.txt";
+		String jsonStr = FileUtils.readFileByChars(path);
+		
 		JSONObject jsonObj;
 		if (null == jsonStr)
 			return null;
 
-		PostActivity.emotionList = new ArrayList<EmotionInfo>();
+		ArrayList<EmotionInfo> emotionList = new ArrayList<EmotionInfo>();
 		try {// 将json字符串转换为json对象
 			jsonObj = new JSONObject(jsonStr);
 			// 得到指定json key对象的value对象
@@ -188,27 +191,27 @@ public class FriendOper {
 				EmotionInfo info = new EmotionInfo();
 				info.setImageName(jsonItem.getString("image_name"));
 				info.setText("[" + jsonItem.getString("text") + "]");
-				PostActivity.emotionList.add(info);
+				emotionList.add(info);
 			}
 			// 在表情包里添加 删除表情 的图片
 			EmotionInfo delete;
-			int temp = PostActivity.emotionList.size() / 21; // coloum : 7, row : 3
-			int pageCount = PostActivity.emotionList.size() % (21 * temp) == 0 ? temp : temp + 1;
+			int temp = emotionList.size() / 21; // coloum : 7, row : 3
+			int pageCount = emotionList.size() % (21 * temp) == 0 ? temp : temp + 1;
 			for (int i= 1; i < pageCount + 1; ++i) {
 				delete = new EmotionInfo();
 				delete.setImageName("delete.png");
 				delete.setText("删除");
 				delete.emotionPath = context.getApplicationContext().getFilesDir().getAbsolutePath() +  "/emoticon/" + "delete.png";
 				if (i == pageCount) {
-					PostActivity.emotionList.add(delete);
+					emotionList.add(delete);
 				} else {
-					PostActivity.emotionList.add(20 * i + i-1, delete);
+					emotionList.add(20 * i + i-1, delete);
 				}
 			}
 		} catch (JSONException e) {
 			e.printStackTrace();
 		}
-		return PostActivity.emotionList;
+		return emotionList;
 	}
 
 	/**

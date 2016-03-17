@@ -59,7 +59,7 @@ public class LocationActivity extends Activity{
 				setResult(RETURN_CODE, intent);
 				finish();
 //				LocationActivity.this.onDestroy();
-				
+//				overridePendingTransition(R.anim.in_from_right, R.anim.out_to_right);
 			}
 		});
 		getLocation();
@@ -68,6 +68,11 @@ public class LocationActivity extends Activity{
 		gc.setOnGetGeoCodeResultListener(geoListner);
 	}
 	
+	@Override
+	public void finish() {
+		super.finish();
+		overridePendingTransition(R.anim.in_from_left, R.anim.out_to_right);
+	}
 	private void getLocation() {
 		
 		locationClient = new LocationClient(this);
