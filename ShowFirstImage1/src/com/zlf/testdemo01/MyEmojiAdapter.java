@@ -7,23 +7,28 @@ import com.zlf.testdemo01.domain.EmotionInfo;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 
 public class MyEmojiAdapter extends BaseAdapter{
 
 	private List<EmotionInfo> data;
 
 	private LayoutInflater inflater;
+	private Context context;
 
 	private int size = 0;
 
 	public MyEmojiAdapter(Context c, List<EmotionInfo> list) {
 		inflater = LayoutInflater.from(c);
+		context = c;
 		data = list;
 		size = list.size();
 	}
@@ -61,10 +66,9 @@ public class MyEmojiAdapter extends BaseAdapter{
 		vh.iv = (ImageView) convertView.findViewById(R.id.image);
 //		vh.iv.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
 		vh.iv.setTag(data.get(position));
-		bm = BitmapFactory.decodeFile(MainActivity.localPath + "/emoticon/" + data.get(position).getImageName());
-		
-//		System.out.println(MainActivity.localPath + "/emoticon/" + data.get(position).getImageName());
-		
+		bm = BitmapFactory.decodeFile(context.getApplicationContext().getFilesDir().getAbsolutePath() + "/emoticon/" + data.get(position).getImageName());
+	
+//		vh.iv.setLayoutParams(new LinearLayout.LayoutParams(ImageUtils.dip2px(context, 30), ImageUtils.dip2px(context, 30)));
 		vh.iv.setImageBitmap(bm);
 		
 		convertView.setTag(vh);

@@ -175,7 +175,7 @@ public class FriendOper {
 		if (null == jsonStr)
 			return null;
 
-		ArrayList<EmotionInfo> emotionList = new ArrayList<EmotionInfo>();
+		List<EmotionInfo> emotionList = new ArrayList<EmotionInfo>();
 		try {// 将json字符串转换为json对象
 			jsonObj = new JSONObject(jsonStr);
 			// 得到指定json key对象的value对象

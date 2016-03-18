@@ -8,16 +8,19 @@ import android.widget.RelativeLayout;
 
 public class MyPostLayout extends RelativeLayout{
 
+	private Context context;
 	private static boolean bStartupFlag = false;
 	public MyPostLayout(Context context) {
 		super(context);
+		this.context = context;
 	}
 //	private static int count = 0; 
     
     public MyPostLayout(Context context, AttributeSet attrs) { 
         super(context, attrs); 
+        this.context = context;
     } 
-     
+
     @Override 
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {     
         super.onSizeChanged(w, h, oldw, oldh); 
@@ -37,7 +40,7 @@ public class MyPostLayout extends RelativeLayout{
         	// 隐藏输入法后必须隐藏表情页
         	Message msg = new Message();
         	msg.what = 3;
-        	PostActivity.editTextHandler.sendMessage(msg);
+        	PostActivity.handler.sendMessage(msg);
         	Log.e("onSizeChanged", "bInputInVisiable set false");
         } else if (h < oldh){
         	if (PostActivity.bInputVisiable == true) {

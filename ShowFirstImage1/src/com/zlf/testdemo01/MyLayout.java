@@ -10,6 +10,7 @@ import android.widget.RelativeLayout;
 public class MyLayout extends RelativeLayout{
 
 	private static boolean bStartupFlag = false;
+	Boolean bInputVisiable = false;
 	public MyLayout(Context context) {
 		super(context);
 	}
@@ -34,17 +35,23 @@ public class MyLayout extends RelativeLayout{
         	if (MainActivity.bInputVisiable == false) {
         		Log.e("onSizeChanged", "Error bInputVisiable!!!!!!!!!!!!!!!!!!" + MainActivity.bInputVisiable);
         	}
-        	MainActivity.bInputVisiable = false;
-        	// 隐藏输入法后必须显示底部导航栏,并且隐藏编辑框
-        	Message msg = new Message();
-        	msg.what = 3;
-        	MainActivity.editTextHandler.sendMessage(msg);
-        	Log.e("onSizeChanged", "bInputInVisiable set false");
+
+//        	MainActivity.bInputVisiable = false;
+//        	// 隐藏输入法后必须显示底部导航栏,并且隐藏编辑框
+//        	Message msg = new Message();
+//        	msg.what = 3;
+//        	MainActivity.editTextHandler.sendMessage(msg);
+//        	Log.e("onSizeChanged", "bInputInVisiable set false");
+        	
+        	bInputVisiable = false;
+        	onChangeLayoutListener.layoutChanged(bInputVisiable); //bInputVisiable true; 隐藏输入法后必须显示底部导航栏,并且隐藏编辑框
         } else if (h < oldh){
         	if (MainActivity.bInputVisiable == true) {
         		Log.e("onSizeChanged", "Error bInputVisiable!!!!!!!!!!!!!!!!!!" + MainActivity.bInputVisiable);
         	}
-        	MainActivity.bInputVisiable = true;
+        	
+        	bInputVisiable = true;
+        	onChangeLayoutListener.layoutChanged(bInputVisiable); //bInputVisiable false
         	Log.e("onSizeChanged", "bInputInVisiable set true");
         }
 //        Log.e("onSizeChanged " + count++, "=>onResize called! w="+w + ",h="+h+",oldw="+oldw+",oldh="+oldh); 
@@ -61,7 +68,16 @@ public class MyLayout extends RelativeLayout{
         super.onMeasure(widthMeasureSpec, heightMeasureSpec); 
          
 //        Log.e("onMeasure " + count++, "=>onMeasure called! widthMeasureSpec=" + widthMeasureSpec + ", heightMeasureSpec=" + heightMeasureSpec); 
-    } 
+    }
+    
+    private OnLayoutChangedListener onChangeLayoutListener;
+
+	public void setOnChangeLayoutListener(OnLayoutChangedListener onChangeLayoutListener) {
+		if (onChangeLayoutListener == null) {
+			return;
+		}
+		this.onChangeLayoutListener = onChangeLayoutListener;
+	} 
     
     
    

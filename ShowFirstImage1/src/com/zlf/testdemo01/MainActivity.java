@@ -105,6 +105,7 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 	private boolean onLoadedFlag = false;
 	private boolean firstClickFlag = false;
 	private static View bottomLayout = null;
+	private MyLayout mLayout;
 
 	public static Handler editTextHandler = new Handler() {
 		public void handleMessage(Message msg) {
@@ -115,6 +116,7 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 					commentView.setVisibility(View.INVISIBLE);
 					delayShowBottomLayout(editTextHandler);
 					backTime = new Date(System.currentTimeMillis());
+					
 				}
 				break;
 			case 3:
@@ -366,6 +368,8 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 		msgListView.setAdapter(msgAdapter);
 		getMsgDatas();
 		msgAdapter.notifyDataSetChanged();
+		
+		 
 	}
 
 	private void getMsgDatas() {
@@ -382,16 +386,16 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 		contentList.add("right:你能控制住自己不把它唱出来吗");
 		contentList.add("left:....");
 		contentList.add("right:你能控制住自己不把它唱出来吗????????????????????????????????????????????");
-		contentList.add("left:....");
-		contentList.add("left:....");
-		contentList.add("left:....");
-		contentList.add("left:....");
-		contentList.add("left:....");
-		contentList.add("left:....");
-		contentList.add("left:....");
-		contentList.add("left:....");
-		contentList.add("left:....");
-		contentList.add("left:....");
+		contentList.add("left:1....");
+		contentList.add("left:2....");
+		contentList.add("left:3....");
+		contentList.add("left:4....");
+		contentList.add("left:5....");
+		contentList.add("left:6....");
+		contentList.add("left:7....");
+		contentList.add("left:8....");
+		contentList.add("left:9....");
+		contentList.add("left:0....");
 		contentList.add("left:....");
 
 		for (int i = 0; i < 1; ++i) {
@@ -421,6 +425,22 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 
 		commitPraiseBtn = (Button) timeline.findViewById(R.id.comment_send);
 		commitPraiseBtn.setOnClickListener(this);
+		
+		mLayout = (MyLayout) timeline.findViewById(R.id.timeline_mylayout);
+		mLayout.setOnChangeLayoutListener(new OnLayoutChangedListener() {
+			
+			@Override
+			public void layoutChanged(Boolean bInputVisiable) {
+				if (bInputVisiable == true) {
+//					Message msg = new Message();
+//					msg.what = 3;
+//					editTextHandler.sendMessage(msg);
+					MainActivity.bInputVisiable = true;
+				} else {
+					MainActivity.bInputVisiable = false;
+				}
+			}
+		});
 	}
 
 	public void onRefresh() {
@@ -586,7 +606,7 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
 		if (KeyEvent.KEYCODE_BACK == keyCode) {
-			if (commentView.getVisibility() == View.VISIBLE) {
+			if (commentView != null && commentView.getVisibility() == View.VISIBLE) {
 				Message msg = new Message();
 				msg.what = 8;
 				handler.sendMessage(msg);

@@ -16,7 +16,6 @@ import com.lidroid.xutils.http.callback.RequestCallBack;
 import com.lidroid.xutils.http.client.HttpRequest;
 import com.zlf.testdemo01.domain.EmotionInfo;
 
-import android.animation.ObjectAnimator;
 import android.app.ActionBar.LayoutParams;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -50,9 +49,6 @@ import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.view.animation.AlphaAnimation;
-import android.view.animation.Animation;
-import android.view.animation.ScaleAnimation;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
@@ -117,7 +113,7 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 	private Button atBtn;
 	private Button picBtn;
 
-	public static Handler editTextHandler = new Handler() {
+	public static Handler handler = new Handler() {
 		public void handleMessage(android.os.Message msg) {
 			if (msg.what == 3) {
 				// 隐藏输入法后必须隐藏表情页
@@ -255,7 +251,7 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 	private void initEmojiPopupWindow() {
 		View contentView = LayoutInflater.from(this).inflate(R.layout.popup_window_emoji, null);
 		emojiWindow = new MyEmojiPopupWindow(contentView, ViewGroup.LayoutParams.MATCH_PARENT,
-				ViewGroup.LayoutParams.WRAP_CONTENT);
+				ViewGroup.LayoutParams.WRAP_CONTENT, handler);
 		emojiWindow.setFocusable(false);
 		emojiWindow.setTouchable(true);
 		emojiWindow.setOutsideTouchable(true);
