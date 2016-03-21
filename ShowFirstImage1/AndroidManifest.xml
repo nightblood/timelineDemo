@@ -68,6 +68,7 @@
         </activity>
         <activity
             android:name=".PostActivity"
+            android:theme="@style/silde_activity_Translucent"
             android:label="@string/app_name"
             android:windowSoftInputMode="adjustResize" >
             <intent-filter>
@@ -87,6 +88,7 @@
         <activity android:name=".LocationActivity" >
         </activity>
         <activity android:name=".ChatActivity" 
+            android:theme="@style/silde_activity_Translucent"
             android:windowSoftInputMode="stateHidden|adjustResize">
         </activity>
     </application>

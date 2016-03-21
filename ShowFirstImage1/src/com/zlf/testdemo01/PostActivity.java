@@ -14,10 +14,10 @@ import com.lidroid.xutils.http.RequestParams;
 import com.lidroid.xutils.http.ResponseInfo;
 import com.lidroid.xutils.http.callback.RequestCallBack;
 import com.lidroid.xutils.http.client.HttpRequest;
+import com.zlf.testdemo01.domain.BasePostActivity;
 import com.zlf.testdemo01.domain.EmotionInfo;
 
 import android.app.ActionBar.LayoutParams;
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.AlertDialog.Builder;
 import android.content.Context;
@@ -41,6 +41,7 @@ import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.TextUtils;
 import android.text.style.ImageSpan;
+import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -73,7 +74,8 @@ import android.widget.Toast;
  * @author Administrator
  *
  */
-public class PostActivity extends Activity implements OnClickListener, OnItemClickListener {
+public class PostActivity extends BasePostActivity implements OnClickListener, OnItemClickListener
+	{
 	private List<File> imageFiles;
 	private GridView gridView1; // 网格显示缩略图
 	private Button buttonPublish; // 发布按钮
@@ -95,6 +97,8 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 	public static String KEY_TO_SHOW_PICTURES_ACTIVITY = "CAN_SELECTED_PICTURE_COUNT";
 
 	public static final int SHOW_PICTURE_CODE = 0x01;
+	private static final float FLING_MIN_DISTANCE = 10;
+	private static final float FLING_MIN_VELOCITY = 10;
 
 	private static InputMethodManager inputManager;
 	public static boolean bInputVisiable = false;
@@ -112,6 +116,8 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 	private TextView locationContent;
 	private Button atBtn;
 	private Button picBtn;
+	private GestureDetector gesture;
+	private View postLayout;
 
 	public static Handler handler = new Handler() {
 		public void handleMessage(android.os.Message msg) {
@@ -130,6 +136,7 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
+		
 		// mapImageCached = new HashMap();
 		imageFiles = new ArrayList<File>();
 		/*
@@ -140,6 +147,7 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 		// 锁定屏幕
 		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 		setContentView(R.layout.activity_post);
+		initBaseActivity(true, false);
 
 		initView();
 
@@ -376,7 +384,7 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 		backgroundAlpha(0.7f);
 		window.setWidth(getWindowManager().getDefaultDisplay().getWidth() * 7 / 8);
 		window.setBackgroundDrawable(getResources().getDrawable(R.drawable.shape2));
-		window.showAtLocation(this.findViewById(R.id.container), Gravity.CENTER, 0, 0);
+		window.showAtLocation(this.findViewById(R.id.slidingLayout), Gravity.CENTER, 0, 0);
 
 		TextView camera = (TextView) contentView.findViewById(R.id.from_camera);
 		TextView pictures = (TextView) contentView.findViewById(R.id.from_pictures);
@@ -438,6 +446,11 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 		inputManager = (InputMethodManager) content.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
 		atBtn = (Button) findViewById(R.id.at);
 		picBtn = (Button) findViewById(R.id.pic);
+		
+		postLayout = findViewById(R.id.slidingLayout);
+//		postLayout.setOnTouchListener(this);
+//		postLayout.setLongClickable(true);
+//		gesture = new GestureDetector(this);
 	}
 
 	// 表情页显示
@@ -781,7 +794,6 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 		case R.id.location:
 			Intent intent = new Intent();
 			intent.setClass(PostActivity.this, LocationActivity.class);
-//			startActivity(intent);
 			startActivityForResult(intent, REQUEST_CODE_GET_LOCATION);
 			overridePendingTransition(R.anim.in_from_right, R.anim.out_to_left);
 			break;
@@ -816,4 +828,5 @@ public class PostActivity extends Activity implements OnClickListener, OnItemCli
 		super.finish();
 		overridePendingTransition(R.anim.in_from_left, R.anim.out_to_right);
 	}
+
 }

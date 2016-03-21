@@ -62,4 +62,9 @@
         <item name="android:background">#bfbfbf</item>
     </style>
     
+      <!--  非全屏无标题  -->
+   <style name="silde_activity_Translucent" parent="android:Theme.Translucent">
+        <!-- API 19 theme customizations can go here. -->
+         <item name="android:windowNoTitle">true</item>
+    </style>
 </resources>

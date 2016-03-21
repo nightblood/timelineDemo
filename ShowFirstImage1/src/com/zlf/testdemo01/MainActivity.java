@@ -394,9 +394,9 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 		contentList.add("left:6....");
 		contentList.add("left:7....");
 		contentList.add("left:8....");
-		contentList.add("left:9....");
-		contentList.add("left:0....");
-		contentList.add("left:....");
+		contentList.add("left:9[阴险]....[阴险]");
+		contentList.add("left:0..[阴险]..");
+		contentList.add("left:[阴险]....[阴险]");
 
 		for (int i = 0; i < 1; ++i) {
 			msgInfo = new MsgInfo();

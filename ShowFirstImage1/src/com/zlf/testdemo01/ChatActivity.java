@@ -1,13 +1,17 @@
 
 package com.zlf.testdemo01;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import com.zlf.testdemo01.domain.BaseActivity;
 import com.zlf.testdemo01.domain.EmotionInfo;
 import com.zlf.testdemo01.utils.FriendOper;
 
 import android.app.ActionBar.LayoutParams;
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -24,18 +28,15 @@ import android.os.Message;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.text.Editable;
-import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.TextUtils;
 import android.text.style.ImageSpan;
 import android.util.DisplayMetrics;
+import android.view.GestureDetector;
 import android.view.Gravity;
-import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
@@ -48,16 +49,16 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.PopupWindow;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class ChatActivity extends Activity implements OnClickListener, OnItemClickListener, OnLayoutChangedListener {
+public class ChatActivity extends BaseActivity implements OnClickListener, 
+	OnItemClickListener, OnLayoutChangedListener{
 
 	public static final int LEFT_TYPE = 0;
 	public static final int RIGHT_TYPE = 1;
 	private ListView msgListView;
-	private List<String> msgDatas;
+	private List<String> msgDatas = null;
 	private MyChatAdapter adapter;
 	private Button emojiBtn;
 	private PopupWindow emojiWindow = null;
@@ -80,18 +81,7 @@ public class ChatActivity extends Activity implements OnClickListener, OnItemCli
 			switch (msg.what) {
 			case 1:
 				// 隐藏输入法，将编辑框上移
-				// if (bInputVisiable == false) {
-				//
-				// } else {
-				// handler.postDelayed(new Runnable() {
-				// @Override
-				// public void run() {
-				// inputManager.toggleSoftInput(InputMethodManager.SHOW_FORCED,
-				// 0);
-				// }
-				// }, 50);
-				//
-				// }
+				
 				break;
 			case 2:
 				break;
@@ -120,11 +110,16 @@ public class ChatActivity extends Activity implements OnClickListener, OnItemCli
 		};
 	};
 	private View emojiLayout;
+	private GestureDetector gesture;
+	private Button sendBtn;
+	private static Map<String, String> emojiMap;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_msg);
+		
+		initBaseActivity(true, false);
 
 		friendOper = new FriendOper(this, null, null);
 		emotionList = friendOper.getEmotionList();
@@ -132,9 +127,13 @@ public class ChatActivity extends Activity implements OnClickListener, OnItemCli
 		Intent intent = getIntent();
 		Bundle bundle = intent.getExtras();
 		msgDatas = bundle.getStringArrayList("data");
-
+		
+		getDatas();
+		
 		initView();
-
+		// 得到表情map
+		initEmojiMap();
+		
 		inputManager = (InputMethodManager) content.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
 
 		if (emotionList != null && emotionList.size() != 0) {
@@ -146,16 +145,83 @@ public class ChatActivity extends Activity implements OnClickListener, OnItemCli
 
 	}
 
+	private void initEmojiMap(){
+		emojiMap = new HashMap<String, String>(emotionList.size());
+		for (int i = 0; i < emotionList.size(); ++i) {
+			emojiMap.put(emotionList.get(i).getText(), emotionList.get(i).getImageName());
+		}
+	}
+	
+	
+	private List<Spannable> datas = new ArrayList<Spannable>();;
+	
+	private void getDatas() {
+		String temp;
+		for (int i = 0; i < msgDatas.size(); ++i) {
+			temp = msgDatas.get(i);
+			datas.add(strToSpanable(temp));
+		}
+	}
+
+	private Spannable strToSpanable(String temp) {
+		int index;
+		List<Integer> indexList = new ArrayList<Integer>();
+		EmotionInfo emotion;
+		String regex = "\\[.*?\\]";
+		Pattern pattern = Pattern.compile(regex);
+		Matcher matcher = pattern.matcher(temp);
+		
+		List<String> emojis = null;
+		
+		while (matcher.find()) {
+			if (emojis == null) 
+				emojis = new ArrayList<String>();
+			emojis.add(matcher.group(0));
+			indexList.add(matcher.start());
+			System.out.println("``````````````````````" + matcher.group(0));
+		}
+		
+		if (emojis == null) 
+			return new SpannableString(temp);
+		
+		SpannableString spannalbeString = null;
+		for (int i = 0; i < emojis.size(); ++i) {
+			index = emotionList.indexOf(emojis.get(i));
+			emotion = emotionList.get(i);
+			
+//			spannalbeString = addFace(this, emotion.getImageName(), temp.substring(indexList.get(i)));
+			spannalbeString = addFace(this, emotion.getImageName(), temp);
+			
+		}
+		
+		return spannalbeString;
+	}
+
 	private void initView() {
 		msgListView = (ListView) findViewById(R.id.msg_listview);
 		emojiBtn = (Button) findViewById(R.id.emoji);
 		emojiBtn.setOnClickListener(this);
 		content = (EditText) findViewById(R.id.content);
-		chatLayout = (MyLayout) findViewById(R.id.chat_mylayout);
+		chatLayout = (MyLayout) findViewById(R.id.slidingLayout);
 
-//		blankImg = (ImageView) findViewById(R.id.null_img);
 		editBar = findViewById(R.id.edit_bar);
 		emojiLayout = findViewById(R.id.emoji_layout);
+		sendBtn = (Button) findViewById(R.id.send);
+		
+		sendBtn.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				
+				if (content.getText().toString() != null && content.getText().toString().length() != 0) {
+					msgDatas.add("right:" + content.getText().toString());
+					
+//					addData("right:" + content.getText().toString());
+					datas.add(content.getText());
+					adapter.notifyDataSetChanged();
+					content.setText("");
+				}
+			}
+		});
 
 		chatLayout.setOnChangeLayoutListener(new OnLayoutChangedListener() {
 			@Override
@@ -166,38 +232,10 @@ public class ChatActivity extends Activity implements OnClickListener, OnItemCli
 				handler.sendMessage(msg);
 			}
 		});
+		
 	}
 
 	
-//	
-//	private void initEmojiPopupWindow() {
-//		View contentView = LayoutInflater.from(this).inflate(R.layout.popup_window_emoji, null);
-//
-//		emojiWindow = new MyEmojiPopupWindow(contentView, ViewGroup.LayoutParams.MATCH_PARENT,
-//				ImageUtils.dip2px(this, 180), handler);
-//
-//		emojiWindow.setFocusable(false);
-//		emojiWindow.setTouchable(true);
-//		emojiWindow.setOutsideTouchable(true);
-//
-//		emojiWindow.setAnimationStyle(R.style.anim_popup_dir);
-//
-//		emojiWindow.setBackgroundDrawable(getResources().getDrawable(R.drawable.shape2));
-//
-//		ViewPager viewPager = (ViewPager) contentView.findViewById(R.id.emotion_viewpage);
-//		LinearLayout emojiCursor = (LinearLayout) contentView.findViewById(R.id.emoji_cursor);
-//		initEmojiPageView(viewPager, emojiCursor);
-//
-//		contentView.setOnTouchListener(new OnTouchListener() {
-//			@Override
-//			public boolean onTouch(View v, MotionEvent event) {
-//				if (emojiWindow.isShowing()) {
-//					emojiWindow.dismiss();
-//				}
-//				return false;
-//			}
-//		});
-//	}
 
 	private void initEmojiLayout() {
 		ViewPager viewPager = (ViewPager) findViewById(R.id.emotion_viewpage);
@@ -296,16 +334,18 @@ public class ChatActivity extends Activity implements OnClickListener, OnItemCli
 	}
 
 	private static final int ERROR_TYPE = 3;
+	private static final float FLING_MIN_DISTANCE = 10;
+	private static final float FLING_MIN_VELOCITY = 10;
 
 	public class MyChatAdapter extends BaseAdapter {
 		@Override
 		public int getCount() {
-			return msgDatas.size();
+			return datas.size();
 		}
 
 		@Override
 		public Object getItem(int position) {
-			return msgDatas.get(position);
+			return datas.get(position);
 		}
 
 		@Override
@@ -326,14 +366,13 @@ public class ChatActivity extends Activity implements OnClickListener, OnItemCli
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent) {
 			ViewHolder holder;
-			String[] content = msgDatas.get(position).split(":");
+			int startIndex = msgDatas.get(position).indexOf(':');
 			int type = getItemViewType(position);
 			if (type == ERROR_TYPE) {
 				System.out.println("Error : type------------------------");
 				return null;
 			}
-			System.out.println("********************************" + content[0] + "***" + content[1]);
-			String[] temp = msgDatas.get(position).split(":");
+			
 			if (convertView == null) {
 				holder = new ViewHolder();
 
@@ -352,8 +391,10 @@ public class ChatActivity extends Activity implements OnClickListener, OnItemCli
 				holder = (ViewHolder) convertView.getTag();
 
 			}
-			holder.content.setText(content[1]);
+			holder.content.setText(datas.get(position).subSequence(startIndex, datas.get(position).length()));
 
+			
+			
 			return convertView;
 		}
 
@@ -375,7 +416,18 @@ public class ChatActivity extends Activity implements OnClickListener, OnItemCli
 		}
 
 	}
-
+	
+//	private Pattern buildPattern() {
+//		StringBuilder patternString = new StringBuilder(mSmileyTexts.length * 3);
+//		patternString.append('(');
+//		for (String s : mSmileyTexts) {
+//			patternString.append(Pattern.quote(s));
+//			patternString.append('|');
+//		}
+//		patternString.replace(patternString.length() - 1, patternString.length(), ")");
+//		return Pattern.compile(patternString.toString());
+//	}
+	
 	@Override
 	public void finish() {
 		super.finish();
@@ -491,8 +543,8 @@ public class ChatActivity extends Activity implements OnClickListener, OnItemCli
 
 		Bitmap bitmap = BitmapFactory.decodeFile(localPath + "/emoticon/" + imageName);
 
-		bitmap = Bitmap.createScaledBitmap(bitmap, EmotionUtils.dip2px(context, 25), EmotionUtils.dip2px(context, 25),
-				true);
+		bitmap = Bitmap.createScaledBitmap(bitmap, EmotionUtils.dip2px(context, 25),
+				EmotionUtils.dip2px(context, 25), true);
 		// bitmap = Bitmap.createScaledBitmap(bitmap, 35, 35, true);
 		Drawable drawable = new BitmapDrawable(bitmap);
 		drawable.setBounds(0, 0, EmotionUtils.dip2px(context, 25), EmotionUtils.dip2px(context, 25));
@@ -533,5 +585,58 @@ public class ChatActivity extends Activity implements OnClickListener, OnItemCli
 		}
 		return softInputHeight;
 	}
+
+//	@Override
+//	public boolean onDown(MotionEvent e) {
+//		// TODO Auto-generated method stub
+//		return false;
+//	}
+//	@Override
+//	public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+//		if(e1.getX() - e2.getX() > FLING_MIN_DISTANCE && Math.abs(velocityX) > FLING_MIN_VELOCITY)  
+//        {  
+////            Intent intent = new Intent(ChatActivity.this, ChatActivity.class);  
+////            startActivity(intent);  
+//             Toast.makeText(this, "向左手势", Toast.LENGTH_SHORT).show();   
+//  
+//        }  
+//        else if (e2.getX()-e1.getX() > FLING_MIN_DISTANCE && Math.abs(velocityX) >FLING_MIN_VELOCITY) {  
+//              
+//            //切换Activity  
+////            Intent intent = new Intent(ChatActivity.this, MainActivity.class);
+//        	
+////            startActivity(intent);  
+//        	Toast.makeText(this, "向右手势", Toast.LENGTH_SHORT).show();  
+//        	super.finish();
+//        	overridePendingTransition(R.anim.in_from_left, R.anim.out_to_right);
+//
+//        }  
+//          
+//        return false; 
+//	}
+//
+//	@Override
+//	public void onLongPress(MotionEvent e) {
+//		// TODO Auto-generated method stub
+//	}
+//	@Override
+//	public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+//		// TODO Auto-generated method stub
+//		return false;
+//	}
+//	@Override
+//	public void onShowPress(MotionEvent e) {
+//		// TODO Auto-generated method stub
+//	}
+//	@Override
+//	public boolean onSingleTapUp(MotionEvent e) {
+//		// TODO Auto-generated method stub
+//		return false;
+//	}
+//	@Override
+//	public boolean onTouch(View v, MotionEvent event) {
+//		
+//		return gesture.onTouchEvent(event);
+//	}
 
 }
