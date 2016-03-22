@@ -8,7 +8,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.zlf.testdemo01.domain.BaseActivity;
+import com.zlf.testdemo01.domain.EmojiKeyboard;
 import com.zlf.testdemo01.domain.EmotionInfo;
+import com.zlf.testdemo01.utils.EmojiParser;
 import com.zlf.testdemo01.utils.FriendOper;
 
 import android.app.ActionBar.LayoutParams;
@@ -30,6 +32,7 @@ import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.text.style.ImageSpan;
 import android.util.DisplayMetrics;
@@ -112,6 +115,7 @@ public class ChatActivity extends BaseActivity implements OnClickListener,
 	private View emojiLayout;
 	private GestureDetector gesture;
 	private Button sendBtn;
+	private EmojiParser emojiParser;
 	private static Map<String, String> emojiMap;
 
 	@Override
@@ -124,11 +128,16 @@ public class ChatActivity extends BaseActivity implements OnClickListener,
 		friendOper = new FriendOper(this, null, null);
 		emotionList = friendOper.getEmotionList();
 
+		// 用于表情替换文字
+		EmojiParser.init(ChatActivity.this);
+		emojiParser = EmojiParser.getInstance(this);
+		
 		Intent intent = getIntent();
 		Bundle bundle = intent.getExtras();
 		msgDatas = bundle.getStringArrayList("data");
-		
-		getDatas();
+		// 从数据库中得到聊天记录
+//		int friendId = 0;
+//		msgDatas = getChatDataFromDb(friendId);
 		
 		initView();
 		// 得到表情map
@@ -145,6 +154,11 @@ public class ChatActivity extends BaseActivity implements OnClickListener,
 
 	}
 
+	private List<String> getChatDataFromDb(int friendId) {
+		
+		return null;
+	}
+
 	private void initEmojiMap(){
 		emojiMap = new HashMap<String, String>(emotionList.size());
 		for (int i = 0; i < emotionList.size(); ++i) {
@@ -152,17 +166,6 @@ public class ChatActivity extends BaseActivity implements OnClickListener,
 		}
 	}
 	
-	
-	private List<Spannable> datas = new ArrayList<Spannable>();;
-	
-	private void getDatas() {
-		String temp;
-		for (int i = 0; i < msgDatas.size(); ++i) {
-			temp = msgDatas.get(i);
-			datas.add(strToSpanable(temp));
-		}
-	}
-
 	private Spannable strToSpanable(String temp) {
 		int index;
 		List<Integer> indexList = new ArrayList<Integer>();
@@ -189,11 +192,8 @@ public class ChatActivity extends BaseActivity implements OnClickListener,
 			index = emotionList.indexOf(emojis.get(i));
 			emotion = emotionList.get(i);
 			
-//			spannalbeString = addFace(this, emotion.getImageName(), temp.substring(indexList.get(i)));
 			spannalbeString = addFace(this, emotion.getImageName(), temp);
-			
 		}
-		
 		return spannalbeString;
 	}
 
@@ -214,9 +214,6 @@ public class ChatActivity extends BaseActivity implements OnClickListener,
 				
 				if (content.getText().toString() != null && content.getText().toString().length() != 0) {
 					msgDatas.add("right:" + content.getText().toString());
-					
-//					addData("right:" + content.getText().toString());
-					datas.add(content.getText());
 					adapter.notifyDataSetChanged();
 					content.setText("");
 				}
@@ -233,16 +230,20 @@ public class ChatActivity extends BaseActivity implements OnClickListener,
 			}
 		});
 		
+		Button backBtn = (Button) findViewById(R.id.back);
+		backBtn.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				finish();
+			}
+		});
+		
 	}
-
-	
 
 	private void initEmojiLayout() {
 		ViewPager viewPager = (ViewPager) findViewById(R.id.emotion_viewpage);
 		LinearLayout emojiCursor = (LinearLayout) findViewById(R.id.emoji_cursor);
 		initEmojiPageView(viewPager, emojiCursor);
-		
-		
 	}
 	
 	private void initEmojiPageView(ViewPager viewPager, LinearLayout emojiCursor) {
@@ -334,18 +335,16 @@ public class ChatActivity extends BaseActivity implements OnClickListener,
 	}
 
 	private static final int ERROR_TYPE = 3;
-	private static final float FLING_MIN_DISTANCE = 10;
-	private static final float FLING_MIN_VELOCITY = 10;
 
 	public class MyChatAdapter extends BaseAdapter {
 		@Override
 		public int getCount() {
-			return datas.size();
+			return msgDatas.size();
 		}
 
 		@Override
 		public Object getItem(int position) {
-			return datas.get(position);
+			return msgDatas.get(position);
 		}
 
 		@Override
@@ -391,9 +390,8 @@ public class ChatActivity extends BaseActivity implements OnClickListener,
 				holder = (ViewHolder) convertView.getTag();
 
 			}
-			holder.content.setText(datas.get(position).subSequence(startIndex, datas.get(position).length()));
 
-			
+			holder.content.setText(emojiParser.addSmileySpans(msgDatas.get(position).toString().substring(startIndex + 1)));
 			
 			return convertView;
 		}
@@ -417,17 +415,6 @@ public class ChatActivity extends BaseActivity implements OnClickListener,
 
 	}
 	
-//	private Pattern buildPattern() {
-//		StringBuilder patternString = new StringBuilder(mSmileyTexts.length * 3);
-//		patternString.append('(');
-//		for (String s : mSmileyTexts) {
-//			patternString.append(Pattern.quote(s));
-//			patternString.append('|');
-//		}
-//		patternString.replace(patternString.length() - 1, patternString.length(), ")");
-//		return Pattern.compile(patternString.toString());
-//	}
-	
 	@Override
 	public void finish() {
 		super.finish();
@@ -446,17 +433,9 @@ public class ChatActivity extends BaseActivity implements OnClickListener,
 			if (bInputVisiable == true) {
 				inputManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
 			}
-
-//			RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) editBar.getLayoutParams();
-//			params.height = getSupportSoftInputHeight() + editBar.getHeight() + emojiLayout.getHeight();
-//			editBar.setLayoutParams(params);
-//			
 			Message msg = new Message();
 			msg.what = 3;
 			handler.sendMessage(msg);
-			
-
-//			showEmoji();
 
 			break;
 
@@ -474,7 +453,6 @@ public class ChatActivity extends BaseActivity implements OnClickListener,
 
 	@Override
 	public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
-
 
 		// 点击表情后，在编辑框中添加表情。
 		EmotionInfo emoji = emotionList.get(pageNum * 21 + arg2);
@@ -516,9 +494,6 @@ public class ChatActivity extends BaseActivity implements OnClickListener,
 
 		if (res != null)
 			insertPhotoToEditText(res);
-
-		// System.out.println("content: " + content.getText().toString());
-	
 	}
 	
 	
@@ -585,58 +560,5 @@ public class ChatActivity extends BaseActivity implements OnClickListener,
 		}
 		return softInputHeight;
 	}
-
-//	@Override
-//	public boolean onDown(MotionEvent e) {
-//		// TODO Auto-generated method stub
-//		return false;
-//	}
-//	@Override
-//	public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-//		if(e1.getX() - e2.getX() > FLING_MIN_DISTANCE && Math.abs(velocityX) > FLING_MIN_VELOCITY)  
-//        {  
-////            Intent intent = new Intent(ChatActivity.this, ChatActivity.class);  
-////            startActivity(intent);  
-//             Toast.makeText(this, "向左手势", Toast.LENGTH_SHORT).show();   
-//  
-//        }  
-//        else if (e2.getX()-e1.getX() > FLING_MIN_DISTANCE && Math.abs(velocityX) >FLING_MIN_VELOCITY) {  
-//              
-//            //切换Activity  
-////            Intent intent = new Intent(ChatActivity.this, MainActivity.class);
-//        	
-////            startActivity(intent);  
-//        	Toast.makeText(this, "向右手势", Toast.LENGTH_SHORT).show();  
-//        	super.finish();
-//        	overridePendingTransition(R.anim.in_from_left, R.anim.out_to_right);
-//
-//        }  
-//          
-//        return false; 
-//	}
-//
-//	@Override
-//	public void onLongPress(MotionEvent e) {
-//		// TODO Auto-generated method stub
-//	}
-//	@Override
-//	public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-//		// TODO Auto-generated method stub
-//		return false;
-//	}
-//	@Override
-//	public void onShowPress(MotionEvent e) {
-//		// TODO Auto-generated method stub
-//	}
-//	@Override
-//	public boolean onSingleTapUp(MotionEvent e) {
-//		// TODO Auto-generated method stub
-//		return false;
-//	}
-//	@Override
-//	public boolean onTouch(View v, MotionEvent event) {
-//		
-//		return gesture.onTouchEvent(event);
-//	}
 
 }

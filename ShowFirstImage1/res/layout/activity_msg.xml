@@ -3,8 +3,44 @@
     android:id="@+id/slidingLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#bfbfbf" >
+    android:background="#bfbfbf"
+    android:orientation="vertical" >
+
+    <RelativeLayout
+        android:id="@+id/top_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:background="#000000"
+        android:orientation="horizontal" >
+
+        <Button
+            android:id="@+id/back"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_alignParentLeft="true"
+            android:layout_margin="10dp"
+            android:background="@drawable/arrow_left" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:layout_toRightOf="@id/back"
+            android:text="奔波儿灞"
+            android:textColor="#ffffff"
+            android:textSize="20dp" />
+
+        <!-- <Button
+            android:id="@+id/complete"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_margin="10dp"
+            android:background="@drawable/shape"
+            android:gravity="center"
+            android:text="完成" /> -->
+    </RelativeLayout>
 
     <LinearLayout
         android:id="@+id/bbbbbbbbbbbbbbbb"
@@ -86,7 +122,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_above="@id/bbbbbbbbbbbbbbbb"
-        android:layout_alignParentTop="true"
+        android:layout_below="@id/top_bar"
         android:background="#efefef"
         android:cacheColorHint="#000000"
         android:divider="@null"

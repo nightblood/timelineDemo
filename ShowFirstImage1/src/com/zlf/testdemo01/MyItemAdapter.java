@@ -9,9 +9,11 @@ import java.util.Locale;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
+import com.zlf.testdemo01.domain.EmojiKeyboard;
 import com.zlf.testdemo01.domain.FriendInfo;
 import com.zlf.testdemo01.domain.ImageInfo;
 import com.zlf.testdemo01.domain.MyViewHolder;
+import com.zlf.testdemo01.utils.EmojiParser;
 
 import android.content.Context;
 import android.content.Intent;
@@ -46,18 +48,23 @@ public class MyItemAdapter extends BaseAdapter{
 	private ImageLoader imageLoader;
 	Handler handler;
 	private View v;
+	private EmojiParser emojiParser;
 	
 	public MyItemAdapter(List<FriendInfo> list, Context c) {
 		datas = list;
 		context = c;
 		imageLoader = ImageLoader.getInstance();
 		imageLoader.init(ImageLoaderConfiguration.createDefault(context));
+		EmojiParser.init(context);
+		emojiParser = EmojiParser.getInstance(context);
 	}
 	public MyItemAdapter(Handler handler, List<FriendInfo> list, Context c) {
 		datas = list;
 		context = c;
 		imageLoader = ImageLoader.getInstance();
 		imageLoader.init(ImageLoaderConfiguration.createDefault(context));
+		EmojiParser.init(context);
+		emojiParser = EmojiParser.getInstance(context);
 		this.handler = handler;
 	}
 
@@ -233,18 +240,24 @@ public class MyItemAdapter extends BaseAdapter{
 	}
 
 	private void setCommentContent(TextView commentContent, ArrayList<String> commentList) {
-		String temp;
-		int end = 0;
+//		String temp;
+//		int end = 0;
 		int index;
+		String[] str;
 		for (int i = 0; i < commentList.size(); ++i) {
 			index = commentList.get(i).indexOf(':');
-			temp = commentList.get(i).substring(0, index);
+//			temp = commentList.get(i).substring(0, index);
+			str = commentList.get(i).split(":", 2);
 			
-			end = temp.length() ;
-			SpannableStringBuilder style = new SpannableStringBuilder(commentList.get(i));
-			style.setSpan(new ForegroundColorSpan(ImageUtils.getResourcesColor(context, R.color.id_color)), 0, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+//			end = temp.length() ;
+//			SpannableStringBuilder style = new SpannableStringBuilder(commentList.get(i));
+			SpannableStringBuilder style = new SpannableStringBuilder(str[0]+":");
+			style.setSpan(new ForegroundColorSpan(ImageUtils.getResourcesColor(context, R.color.id_color)), 
+					0, index, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 			
 			commentContent.append(style);
+			commentContent.append(emojiParser.addSmileySpans(str[1]));
+			
 			if (i != commentList.size() - 1) {
 				commentContent.append("\n"); 
 			} else {

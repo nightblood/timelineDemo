@@ -68,7 +68,6 @@ public class MyEmojiAdapter extends BaseAdapter{
 		vh.iv.setTag(data.get(position));
 		bm = BitmapFactory.decodeFile(context.getApplicationContext().getFilesDir().getAbsolutePath() + "/emoticon/" + data.get(position).getImageName());
 	
-//		vh.iv.setLayoutParams(new LinearLayout.LayoutParams(ImageUtils.dip2px(context, 30), ImageUtils.dip2px(context, 30)));
 		vh.iv.setImageBitmap(bm);
 		
 		convertView.setTag(vh);

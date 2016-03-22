@@ -3,17 +3,16 @@ package com.zlf.testdemo01;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import com.zlf.testdemo01.RefreshLayout.OnLoadListener;
+import com.zlf.testdemo01.domain.EmojiKeyboard;
 import com.zlf.testdemo01.domain.EmotionInfo;
 import com.zlf.testdemo01.domain.FriendInfo;
 import com.zlf.testdemo01.domain.MsgInfo;
 import com.zlf.testdemo01.domain.MyViewHolder;
-import com.zlf.testdemo01.utils.FileUtils;
 import com.zlf.testdemo01.utils.FriendOper;
 
 import android.app.ActionBar.LayoutParams;
@@ -48,7 +47,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 public class MainActivity extends Activity implements OnClickListener, SwipeRefreshLayout.OnRefreshListener,
-		OnLoadListener, OnGestureListener, OnTouchListener, OnPageChangeListener {
+		OnLoadListener, OnGestureListener, OnTouchListener, OnPageChangeListener, OnItemClickListener {
 
 	private final static int DELAY_TIME = 200;
 	// private HttpClient client;
@@ -111,12 +110,15 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 		public void handleMessage(Message msg) {
 			switch (msg.what) {
 			case 2:
-				// 处理点击返回键事件，隐藏EditText 和虚拟键盘
+				// 处理点击 返回键 事件，隐藏EditText 和虚拟键盘
 				if (commentView.getVisibility() == View.VISIBLE) {
 					commentView.setVisibility(View.INVISIBLE);
 					delayShowBottomLayout(editTextHandler);
 					backTime = new Date(System.currentTimeMillis());
 					
+				}
+				if (emojiView.getVisibility() == View.VISIBLE) {
+					emojiView.setVisibility(View.GONE);
 				}
 				break;
 			case 3:
@@ -156,6 +158,9 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 
 					if (bInputVisiable == true)
 						inputManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
+					if (emojiView.getVisibility() == View.VISIBLE) {
+						emojiView.setVisibility(View.GONE);
+					}
 				}
 
 				break;
@@ -169,6 +174,9 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 				if (bInputVisiable == true)
 					inputManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
 
+				if (emojiView.getVisibility() == View.VISIBLE) {
+					emojiView.setVisibility(View.GONE);
+				}
 				break;
 			case 3:
 				View view = (View) msg.obj;
@@ -194,6 +202,9 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 				// 滑动时，隐藏评论编辑框，并且显示底部导航栏
 				commentView.setVisibility(View.INVISIBLE);
 				delayShowBottomLayout(handler);
+				if (emojiView.getVisibility() == View.VISIBLE) {
+					emojiView.setVisibility(View.GONE);
+				}
 				break;
 			case 9:
 				// 已显示评论编辑框前提下，点击朋友圈图片，或者其他控件，需要隐藏编辑框，并且显示底部导航栏
@@ -203,6 +214,29 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 				}
 				if (bInputVisiable == true)
 					inputManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
+				if (emojiView.getVisibility() == View.VISIBLE) {
+					emojiView.setVisibility(View.GONE);
+				}
+				break;
+			case 10:
+				if (emojiView.getVisibility() == View.GONE) {
+					if (bInputVisiable == true) {
+						inputManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
+						handler.postDelayed(new Runnable() {
+							@Override
+							public void run() {
+								emojiView.setVisibility(View.VISIBLE);
+							}
+						}, DELAY_TIME);
+					}
+				} else {
+					emojiView.setVisibility(View.GONE);
+				}
+				break;
+			case 11:
+				if (emojiView.getVisibility() == View.VISIBLE) {
+					emojiView.setVisibility(View.GONE);
+				}
 				break;
 			}
 		}
@@ -297,8 +331,9 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 				praiseText.setText("赞");
 				praiseBtn.setBackgroundResource(R.drawable.icon_like);
 			}
-			window.showAsDropDown((View) (holder).comment, ImageUtils.dip2px(MainActivity.this, -140),
-					ImageUtils.dip2px(MainActivity.this, -25));
+			if (holder != null) 
+				window.showAsDropDown((View) (holder).comment, ImageUtils.dip2px(MainActivity.this, -140),
+						ImageUtils.dip2px(MainActivity.this, -25));
 		}
 	};
 
@@ -311,11 +346,17 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 				getApplicationContext().getFilesDir().getAbsolutePath() + "/emoticon/" + "delete.png");
 		item = BottomViewItem.getInstance();
 
+		if (new File(this.getApplicationContext().getFilesDir().getAbsolutePath() + "/emotion.txt").exists()) {
+			FriendOper friendOper = new FriendOper(this, null, null);
+			EmojiKeyboard.emotionList = friendOper.getEmotionList();
+		}
+		
 		initView();
 
 		initMsgView();
 
 		setTabSelection(0);
+
 		System.out.println("onCreate end!");
 	}
 
@@ -344,6 +385,9 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 	private ListView msgListView;
 	private List<MsgInfo> msgList = new ArrayList<MsgInfo>();
 	private MyMsgAdapter msgAdapter;
+	private Button emojiBtn;
+	private EmojiKeyboard emojiKeyBoard;
+	private static View emojiView;
 
 	private void initMsgView() {
 		View msgView = mViewItems.get(0);
@@ -395,7 +439,7 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 		contentList.add("left:7....");
 		contentList.add("left:8....");
 		contentList.add("left:9[阴险]....[阴险]");
-		contentList.add("left:0..[阴险]..");
+		contentList.add("left:[阴险].");
 		contentList.add("left:[阴险]....[阴险]");
 
 		for (int i = 0; i < 1; ++i) {
@@ -431,16 +475,31 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 			
 			@Override
 			public void layoutChanged(Boolean bInputVisiable) {
+				MainActivity.bInputVisiable = bInputVisiable;
+				
 				if (bInputVisiable == true) {
-//					Message msg = new Message();
-//					msg.what = 3;
-//					editTextHandler.sendMessage(msg);
-					MainActivity.bInputVisiable = true;
-				} else {
-					MainActivity.bInputVisiable = false;
+					Message msg = new Message();
+					msg.what = 11;
+					handler.sendMessage(msg);
 				}
 			}
 		});
+		
+		emojiView = timeline.findViewById(R.id.emoji_layout);
+		emojiBtn = (Button) timeline.findViewById(R.id.emoji_btn);
+		emojiBtn.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				Message msg = new Message();
+				msg.what = 10;
+				handler.sendMessage(msg);
+			}
+		});
+
+		emojiKeyBoard = new EmojiKeyboard(this
+				, (ViewPager)timeline.findViewById(R.id.emotion_viewpage)
+				, (LinearLayout)timeline.findViewById(R.id.emoji_cursor));
+		emojiKeyBoard.initEmojiView();
 	}
 
 	public void onRefresh() {
@@ -694,5 +753,12 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 			handler.sendMessage(msg);
 		}
 		super.onPause();
+	}
+
+	@Override
+	public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
+		// 点击emoji表情，添加到编辑框
+		Toast.makeText(MainActivity.this, "emoji:" + emojiKeyBoard.getPageNum() + " -- " + arg2, Toast.LENGTH_SHORT).show();
+		emojiKeyBoard.clickEmoji(commentEdit, emojiKeyBoard.getPageNum(), arg2);
 	}
 }

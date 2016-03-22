@@ -33,6 +33,7 @@ import com.zlf.testdemo01.MainActivity;
 import com.zlf.testdemo01.MyItemAdapter;
 import com.zlf.testdemo01.PostActivity;
 import com.zlf.testdemo01.R;
+import com.zlf.testdemo01.domain.EmojiKeyboard;
 import com.zlf.testdemo01.domain.EmotionInfo;
 import com.zlf.testdemo01.domain.FriendInfo;
 import com.zlf.testdemo01.domain.ImageInfo;
@@ -193,6 +194,8 @@ public class FriendOper {
 				info.setText("[" + jsonItem.getString("text") + "]");
 				emotionList.add(info);
 			}
+			// 保存表情，用于替换文字
+			EmojiParser.initEmojiList(emotionList);
 			// 在表情包里添加 删除表情 的图片
 			EmotionInfo delete;
 			int temp = emotionList.size() / 21; // coloum : 7, row : 3
@@ -211,6 +214,7 @@ public class FriendOper {
 		} catch (JSONException e) {
 			e.printStackTrace();
 		}
+		
 		return emotionList;
 	}
 
