@@ -8,8 +8,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.zlf.testdemo01.domain.BaseActivity;
+import com.zlf.testdemo01.domain.ChatEntity;
 import com.zlf.testdemo01.domain.EmojiKeyboard;
 import com.zlf.testdemo01.domain.EmotionInfo;
+import com.zlf.testdemo01.utils.DBManager;
 import com.zlf.testdemo01.utils.EmojiParser;
 import com.zlf.testdemo01.utils.FriendOper;
 
@@ -77,6 +79,13 @@ public class ChatActivity extends BaseActivity implements OnClickListener,
 	private MyLayout chatLayout;
 //	private ImageView blankImg;
 	private View editBar;
+	private View emojiLayout;
+	private GestureDetector gesture;
+	private Button sendBtn;
+	private EmojiParser emojiParser;
+	private static Map<String, String> emojiMap;
+	private DBManager dbManager;
+	private List<ChatEntity> chatDatas;
 
 	private Handler handler = new Handler() {
 
@@ -112,11 +121,9 @@ public class ChatActivity extends BaseActivity implements OnClickListener,
 			}
 		};
 	};
-	private View emojiLayout;
-	private GestureDetector gesture;
-	private Button sendBtn;
-	private EmojiParser emojiParser;
-	private static Map<String, String> emojiMap;
+	protected String myName = "开发者";
+	private String friendName;
+	private int resultCode = 0;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -132,12 +139,16 @@ public class ChatActivity extends BaseActivity implements OnClickListener,
 		EmojiParser.init(ChatActivity.this);
 		emojiParser = EmojiParser.getInstance(this);
 		
+		// 从数据库中得到聊天记录
 		Intent intent = getIntent();
 		Bundle bundle = intent.getExtras();
-		msgDatas = bundle.getStringArrayList("data");
-		// 从数据库中得到聊天记录
-//		int friendId = 0;
-//		msgDatas = getChatDataFromDb(friendId);
+		friendName = bundle.getString("friendName");
+		
+		dbManager = new DBManager(this);
+		chatDatas = dbManager.query(friendName);
+		
+		for (int i = 0; i < chatDatas.size(); ++i)
+			System.out.println(" " + chatDatas.get(i).msgBelongName + ": " + chatDatas.get(i).chatData);
 		
 		initView();
 		// 得到表情map
@@ -152,11 +163,6 @@ public class ChatActivity extends BaseActivity implements OnClickListener,
 		adapter = new MyChatAdapter();
 		msgListView.setAdapter(adapter);
 
-	}
-
-	private List<String> getChatDataFromDb(int friendId) {
-		
-		return null;
 	}
 
 	private void initEmojiMap(){
@@ -213,9 +219,16 @@ public class ChatActivity extends BaseActivity implements OnClickListener,
 			public void onClick(View v) {
 				
 				if (content.getText().toString() != null && content.getText().toString().length() != 0) {
-					msgDatas.add("right:" + content.getText().toString());
+					
+					dbManager.add(myName, content.getText().toString(), friendName);
+					
+					chatDatas.add(new ChatEntity(myName , content.getText().toString()));
 					adapter.notifyDataSetChanged();
 					content.setText("");
+					
+					if (resultCode == 0) {
+						resultCode = 1;
+					}
 				}
 			}
 		});
@@ -339,12 +352,12 @@ public class ChatActivity extends BaseActivity implements OnClickListener,
 	public class MyChatAdapter extends BaseAdapter {
 		@Override
 		public int getCount() {
-			return msgDatas.size();
+			return chatDatas.size();
 		}
 
 		@Override
 		public Object getItem(int position) {
-			return msgDatas.get(position);
+			return chatDatas.get(position);
 		}
 
 		@Override
@@ -354,7 +367,7 @@ public class ChatActivity extends BaseActivity implements OnClickListener,
 
 		@Override
 		public int getItemViewType(int position) {
-			return getViewType(msgDatas.get(position));
+			return getViewType(chatDatas.get(position).msgBelongName);
 		}
 
 		@Override
@@ -365,12 +378,9 @@ public class ChatActivity extends BaseActivity implements OnClickListener,
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent) {
 			ViewHolder holder;
-			int startIndex = msgDatas.get(position).indexOf(':');
 			int type = getItemViewType(position);
-			if (type == ERROR_TYPE) {
-				System.out.println("Error : type------------------------");
-				return null;
-			}
+			
+			System.out.println("type(left0 , right1):" + type);
 			
 			if (convertView == null) {
 				holder = new ViewHolder();
@@ -390,20 +400,16 @@ public class ChatActivity extends BaseActivity implements OnClickListener,
 				holder = (ViewHolder) convertView.getTag();
 
 			}
-
-			holder.content.setText(emojiParser.addSmileySpans(msgDatas.get(position).toString().substring(startIndex + 1)));
 			
+			holder.content.setText(emojiParser.addSmileySpans(chatDatas.get(position).chatData));
 			return convertView;
 		}
 
-		private int getViewType(String string) {
-			String[] temp = string.split(":");
-			if (temp[0].equals("right")) {
+		private int getViewType(String msgBelongName) {
+			if (msgBelongName.equals(myName)) {
 				return RIGHT_TYPE;
-			} else if (temp[0].equals("left")) {
-				return LEFT_TYPE;
 			}
-			return ERROR_TYPE;
+			return LEFT_TYPE;
 		}
 
 		public class ViewHolder {
@@ -417,6 +423,9 @@ public class ChatActivity extends BaseActivity implements OnClickListener,
 	
 	@Override
 	public void finish() {
+		Intent mIntent = new Intent();
+        this.setResult(resultCode, mIntent);
+		
 		super.finish();
 		overridePendingTransition(R.anim.in_from_left, R.anim.out_to_right);
 	}

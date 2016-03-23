@@ -23,18 +23,21 @@
             android:id="@+id/name"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="18dp"
-            android:textStyle="bold"
             android:layout_marginTop="5dp"
-            android:text="developer" />
+            android:text="developer"
+            android:textSize="18dp"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/msg_content"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:gravity="center_vertical"
             android:layout_marginBottom="5dp"
-            android:textSize="14dp"
-            android:text="content" />
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:text="content"
+            android:textSize="14dp" />
     </LinearLayout>
 
-</RelativeLayout >
+</RelativeLayout>

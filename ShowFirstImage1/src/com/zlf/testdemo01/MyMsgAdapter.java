@@ -2,7 +2,7 @@ package com.zlf.testdemo01;
 
 import java.util.List;
 
-import com.zlf.testdemo01.domain.MsgInfo;
+import com.zlf.testdemo01.domain.ChatContentEntity;
 import com.zlf.testdemo01.utils.EmojiParser;
 
 import android.content.Context;
@@ -14,10 +14,10 @@ import android.widget.TextView;
 
 public class MyMsgAdapter extends BaseAdapter {
 	private Context context;
-	private List<MsgInfo> datas;
+	private List<ChatContentEntity> datas;
 	private EmojiParser emojiParser;
 	
-	public MyMsgAdapter(Context c, List<MsgInfo> msgList) {
+	public MyMsgAdapter(Context c, List<ChatContentEntity> msgList) {
 		this.context = c;
 		this.datas = msgList;
 		
@@ -56,14 +56,10 @@ public class MyMsgAdapter extends BaseAdapter {
 			holder = (ViewHolder) convertView.getTag();
 		}
 		
-		holder.name.setText(datas.get(position).getFriendName());
-		String[] temp = datas.get(position).getContentList().get(datas.get(position).getContentList().size() - 1).split(":");
-		if (temp[0].equals("left")) {
-			holder.content.setText(datas.get(position).getFriendName() + ": ");
-		} else {
-			holder.content.setText("¿ª·¢Õß" + ": " );
-		}
-		holder.content.append(emojiParser.addSmileySpans(temp[1]));
+		holder.name.setText(datas.get(position).friendName);
+			
+		holder.content.setText(datas.get(position).latestMsg.msgBelongName + ": ");
+		holder.content.append(emojiParser.addSmileySpans(datas.get(position).latestMsg.chatData));
 		
 		return convertView;
 	}

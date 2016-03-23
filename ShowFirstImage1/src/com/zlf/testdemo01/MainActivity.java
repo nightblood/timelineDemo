@@ -8,17 +8,21 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import com.zlf.testdemo01.RefreshLayout.OnLoadListener;
+import com.zlf.testdemo01.domain.ChatContentEntity;
+import com.zlf.testdemo01.domain.ChatEntity;
 import com.zlf.testdemo01.domain.EmojiKeyboard;
 import com.zlf.testdemo01.domain.EmotionInfo;
 import com.zlf.testdemo01.domain.FriendInfo;
 import com.zlf.testdemo01.domain.MsgInfo;
 import com.zlf.testdemo01.domain.MyViewHolder;
+import com.zlf.testdemo01.utils.DBManager;
 import com.zlf.testdemo01.utils.FriendOper;
 
 import android.app.ActionBar.LayoutParams;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.os.Handler;
@@ -68,6 +72,7 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 	private RefreshLayout mSwipeLayout;
 	// private PullToRefreshListView mSwipeLayout;
 	private static final int REFRESH_COMPLETE = 0X110;
+	protected static final int REQUST_CODE_CHAT_ACTIVITY = 0xc0;
 	public static int ON_LOAD = 0;
 	public static int ON_REFERSH = 1;
 	public static int pageNum = 1;
@@ -383,11 +388,12 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 	}
 
 	private ListView msgListView;
-	private List<MsgInfo> msgList = new ArrayList<MsgInfo>();
+	private List<ChatContentEntity> msgList = new ArrayList<ChatContentEntity>();
 	private MyMsgAdapter msgAdapter;
 	private Button emojiBtn;
 	private EmojiKeyboard emojiKeyBoard;
 	private static View emojiView;
+	private DBManager dbManager;
 
 	private void initMsgView() {
 		View msgView = mViewItems.get(0);
@@ -398,13 +404,12 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 				Intent intent = new Intent();
 				Bundle bundle = new Bundle();
 				
-				bundle.putStringArray("data", (String[]) msgList.get(arg2).getContentList()
-						.toArray(new String[msgList.get(arg2).getContentList().size()]));
-				bundle.putStringArrayList("data", (ArrayList<String>) msgList.get(arg2).getContentList());
+				bundle.putString("friendName", "friendName");
 				intent.putExtras(bundle);
 				intent.setClass(MainActivity.this, ChatActivity.class);
 				
-				startActivity(intent);
+				startActivityForResult(intent, REQUST_CODE_CHAT_ACTIVITY);
+//				startActivity(intent);
 				overridePendingTransition(R.anim.in_from_right, R.anim.out_to_left);
 			}
 		});
@@ -412,44 +417,16 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 		msgListView.setAdapter(msgAdapter);
 		getMsgDatas();
 		msgAdapter.notifyDataSetChanged();
-		
-		 
 	}
 
 	private void getMsgDatas() {
-		MsgInfo msgInfo;
-		List<String> contentList = new ArrayList<String>();
-		contentList.add("left:....");
-		contentList.add("left:比如说呢？");
-		contentList.add("right:找呀找呀找朋友，找到一个好朋友，敬个礼，握个手，你是我的好朋友");
-		contentList.add("left:什么意思");
-		contentList.add("right:你能控制住自己不把它唱出来吗");
-		contentList.add("left:....");
-		contentList.add("right:你能控制住自己不把它唱出来吗");
-		contentList.add("left:....");
-		contentList.add("right:你能控制住自己不把它唱出来吗");
-		contentList.add("left:....");
-		contentList.add("right:你能控制住自己不把它唱出来吗????????????????????????????????????????????");
-		contentList.add("left:1....");
-		contentList.add("left:2....");
-		contentList.add("left:3....");
-		contentList.add("left:4....");
-		contentList.add("left:5....");
-		contentList.add("left:6....");
-		contentList.add("left:7....");
-		contentList.add("left:8....");
-		contentList.add("left:9[阴险]....[阴险]");
-		contentList.add("left:[阴险].");
-		contentList.add("left:[阴险]....[阴险]");
-
-		for (int i = 0; i < 1; ++i) {
-			msgInfo = new MsgInfo();
-			msgInfo.setFriendId(i);
-			msgInfo.setFriendName("奔波儿灞");
-			msgInfo.setIconImage("");
-			msgInfo.setContentList(contentList);
-			msgList.add(msgInfo);
-		}
+		ChatContentEntity chatContent;
+		chatContent = new ChatContentEntity();
+		dbManager = new DBManager(this);
+		ChatEntity query = dbManager.queryLatestMsg("friendName");
+		chatContent.latestMsg = query;
+		chatContent.friendName = "friendName";
+		msgList.add(chatContent);
 	}
 
 	private void initTimeLineView() {
@@ -760,5 +737,14 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 		// 点击emoji表情，添加到编辑框
 		Toast.makeText(MainActivity.this, "emoji:" + emojiKeyBoard.getPageNum() + " -- " + arg2, Toast.LENGTH_SHORT).show();
 		emojiKeyBoard.clickEmoji(commentEdit, emojiKeyBoard.getPageNum(), arg2);
+	}
+	
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		if (resultCode == 1 && requestCode == REQUST_CODE_CHAT_ACTIVITY) {
+			msgList.get(0).latestMsg = dbManager.queryLatestMsg("friendName");
+			msgAdapter.notifyDataSetChanged();
+		}
+		super.onActivityResult(requestCode, resultCode, data);
 	}
 }

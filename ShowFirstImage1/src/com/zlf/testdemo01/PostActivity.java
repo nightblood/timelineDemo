@@ -358,52 +358,58 @@ public class PostActivity extends BasePostActivity implements OnClickListener, O
 		map.put("itemImage", bmp);
 		imageItem.add(map);
 	}
-
+	private PopupWindow window = null;
 	protected void showPopupWindow() {
-		View contentView = LayoutInflater.from(this).inflate(R.layout.popup_window_add_button, null);
-		final PopupWindow window = new PopupWindow(contentView, ViewGroup.LayoutParams.WRAP_CONTENT,
-				ViewGroup.LayoutParams.WRAP_CONTENT, true);
+		if (window == null) {
+			View contentView = LayoutInflater.from(this).inflate(R.layout.popup_window_add_button, null);
+			window = new PopupWindow(contentView, ViewGroup.LayoutParams.WRAP_CONTENT,
+					ViewGroup.LayoutParams.WRAP_CONTENT, true);
+			
+			window.setAnimationStyle(R.style.anim_popup_add_picture);
+			
+			window.setTouchable(true);
+			window.setTouchInterceptor(new OnTouchListener() {
+				@Override
+				public boolean onTouch(View v, MotionEvent event) {
+
+					return false;
+				}
+			});
+			window.setOnDismissListener(new OnDismissListener() {
+				@Override
+				public void onDismiss() {
+//					backgroundAlpha(1f);
+				}
+			});
+
+//			backgroundAlpha(0.9f);
+			window.setWidth(getWindowManager().getDefaultDisplay().getWidth() * 7 / 8);
+			window.setBackgroundDrawable(getResources().getDrawable(R.drawable.shape2));
+			window.showAtLocation(this.findViewById(R.id.slidingLayout), Gravity.CENTER, 0, 0);
+
+			TextView camera = (TextView) contentView.findViewById(R.id.from_camera);
+			TextView pictures = (TextView) contentView.findViewById(R.id.from_pictures);
+
+			camera.setOnClickListener(new OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					getImageFromCamera();
+					window.dismiss();
+				}
+			});
+			pictures.setOnClickListener(new OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					getImageFromAlbum();
+					window.dismiss();
+				}
+
+			});
+		} else {
+//			backgroundAlpha(0.9f);
+			window.showAtLocation(this.findViewById(R.id.slidingLayout), Gravity.CENTER, 0, 0);
+		}
 		
-		window.setAnimationStyle(R.style.anim_popup_add_picture);
-		
-		window.setTouchable(true);
-		window.setTouchInterceptor(new OnTouchListener() {
-			@Override
-			public boolean onTouch(View v, MotionEvent event) {
-
-				return false;
-			}
-		});
-		window.setOnDismissListener(new OnDismissListener() {
-			@Override
-			public void onDismiss() {
-				backgroundAlpha(1f);
-			}
-		});
-
-		backgroundAlpha(0.7f);
-		window.setWidth(getWindowManager().getDefaultDisplay().getWidth() * 7 / 8);
-		window.setBackgroundDrawable(getResources().getDrawable(R.drawable.shape2));
-		window.showAtLocation(this.findViewById(R.id.slidingLayout), Gravity.CENTER, 0, 0);
-
-		TextView camera = (TextView) contentView.findViewById(R.id.from_camera);
-		TextView pictures = (TextView) contentView.findViewById(R.id.from_pictures);
-
-		camera.setOnClickListener(new OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				getImageFromCamera();
-				window.dismiss();
-			}
-		});
-		pictures.setOnClickListener(new OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				getImageFromAlbum();
-				window.dismiss();
-			}
-
-		});
 	}
 	private void getImageFromAlbum() {
 		Intent intent = new Intent();

@@ -7,7 +7,8 @@ public class MsgInfo {
 	private int friendId;
 	private String friendName;
 	private String iconImage;
-	private List<String> contentList;
+//	private List<String> contentList;
+	private String latestMsg;
 
 	public String getIconImage() {
 		return iconImage;
@@ -33,12 +34,20 @@ public class MsgInfo {
 		this.friendId = friendId;
 	}
 
-	public List<String> getContentList() {
-		return contentList;
+//	public List<String> getContentList() {
+//		return contentList;
+//	}
+//
+//	public void setContentList(List<String> contentList) {
+//		this.contentList = contentList;
+//	}
+
+	public String getLatestMsg() {
+		return latestMsg;
 	}
 
-	public void setContentList(List<String> contentList) {
-		this.contentList = contentList;
+	public void setLatestMsg(String latestMsg) {
+		this.latestMsg = latestMsg;
 	}
 	
 	

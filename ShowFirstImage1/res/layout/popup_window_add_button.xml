@@ -2,7 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@drawable/shape2"
+    android:background="@drawable/shape4"
     android:layout_marginLeft="20dp"
     android:layout_marginRight="20dp"
     android:orientation="vertical" >
@@ -13,6 +13,7 @@
         android:textSize="20dp"
         android:layout_marginBottom="5dp"
         android:layout_marginLeft="10dp"
+        android:textColor="#000000"
         android:text="拍照"/>
     <ImageView 
         android:layout_width="match_parent"
@@ -23,6 +24,7 @@
         android:layout_height="wrap_content"
         android:textSize="20dp"
         android:layout_marginLeft="10dp"
+        android:textColor="#000000"
         android:text="从相册中选择"/>
 
 </LinearLayout>
