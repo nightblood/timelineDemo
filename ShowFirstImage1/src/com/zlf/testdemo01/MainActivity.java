@@ -13,7 +13,6 @@ import com.zlf.testdemo01.domain.ChatEntity;
 import com.zlf.testdemo01.domain.EmojiKeyboard;
 import com.zlf.testdemo01.domain.EmotionInfo;
 import com.zlf.testdemo01.domain.FriendInfo;
-import com.zlf.testdemo01.domain.MsgInfo;
 import com.zlf.testdemo01.domain.MyViewHolder;
 import com.zlf.testdemo01.utils.DBManager;
 import com.zlf.testdemo01.utils.FriendOper;
@@ -22,7 +21,6 @@ import android.app.ActionBar.LayoutParams;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.database.Cursor;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.os.Handler;
@@ -30,7 +28,7 @@ import android.os.Message;
 import android.os.Vibrator;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
-import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v4.widget.SwipeRefreshLayout.OnRefreshListener;
 import android.view.GestureDetector;
 import android.view.GestureDetector.OnGestureListener;
 import android.view.KeyEvent;
@@ -50,15 +48,12 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class MainActivity extends Activity implements OnClickListener, SwipeRefreshLayout.OnRefreshListener,
-		OnLoadListener, OnGestureListener, OnTouchListener, OnPageChangeListener, OnItemClickListener {
+public class MainActivity extends Activity implements OnClickListener, OnGestureListener,
+		OnTouchListener, OnPageChangeListener, OnItemClickListener {
 
 	private final static int DELAY_TIME = 200;
-	// private HttpClient client;
 	public static List<FriendInfo> friendList = new ArrayList<FriendInfo>();
-	// private List<EmotionInfo> emotionList;
 	private ListView listview;
-	// private MyAdapter adapter;
 	private MyItemAdapter adapter;
 	private Button button;
 	private Button download;
@@ -70,28 +65,20 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 	public static String eMotionData;
 
 	private RefreshLayout mSwipeLayout;
-	// private PullToRefreshListView mSwipeLayout;
 	private static final int REFRESH_COMPLETE = 0X110;
 	protected static final int REQUST_CODE_CHAT_ACTIVITY = 0xc0;
 	public static int ON_LOAD = 0;
 	public static int ON_REFERSH = 1;
 	public static int pageNum = 1;
 	public static boolean bInputVisiable = false;
-	// private View popupView;
-	// private EditText editComment;
-	// private ImageView commentBtn;
 	private Button commentBtn;
 	private static View commentView;
-	// private EditText commentEdit;
 	private static EditText commentEdit;
 	private static InputMethodManager inputManager;
 	private GestureDetector dector;
 	public static boolean bScrolling = false;
 	public static View commentListView = null;
 	private MyPopupWindow window = null;
-	// private static boolean popupIsShowing = false;
-	// private Date preTime = null;
-	// private Date currTime = null;
 	private static Date backTime = null;
 
 	private FriendOper friendUtils = null;
@@ -233,6 +220,8 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 								emojiView.setVisibility(View.VISIBLE);
 							}
 						}, DELAY_TIME);
+					} else {
+						emojiView.setVisibility(View.VISIBLE);
 					}
 				} else {
 					emojiView.setVisibility(View.GONE);
@@ -336,7 +325,7 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 				praiseText.setText("赞");
 				praiseBtn.setBackgroundResource(R.drawable.icon_like);
 			}
-			if (holder != null) 
+			if (holder != null)
 				window.showAsDropDown((View) (holder).comment, ImageUtils.dip2px(MainActivity.this, -140),
 						ImageUtils.dip2px(MainActivity.this, -25));
 		}
@@ -349,13 +338,14 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 
 		ImageUtils.res2file(this, R.drawable.emoji_delete,
 				getApplicationContext().getFilesDir().getAbsolutePath() + "/emoticon/" + "delete.png");
+
 		item = BottomViewItem.getInstance();
 
 		if (new File(this.getApplicationContext().getFilesDir().getAbsolutePath() + "/emotion.txt").exists()) {
 			FriendOper friendOper = new FriendOper(this, null, null);
 			EmojiKeyboard.emotionList = friendOper.getEmotionList();
 		}
-		
+
 		initView();
 
 		initMsgView();
@@ -397,19 +387,20 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 
 	private void initMsgView() {
 		View msgView = mViewItems.get(0);
+		
 		msgListView = (ListView) msgView.findViewById(R.id.msg_listview);
 		msgListView.setOnItemClickListener(new OnItemClickListener() {
 			@Override
 			public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
 				Intent intent = new Intent();
 				Bundle bundle = new Bundle();
-				
+
 				bundle.putString("friendName", "friendName");
 				intent.putExtras(bundle);
 				intent.setClass(MainActivity.this, ChatActivity.class);
-				
+
 				startActivityForResult(intent, REQUST_CODE_CHAT_ACTIVITY);
-//				startActivity(intent);
+				// startActivity(intent);
 				overridePendingTransition(R.anim.in_from_right, R.anim.out_to_left);
 			}
 		});
@@ -473,21 +464,9 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 			}
 		});
 
-		emojiKeyBoard = new EmojiKeyboard(this
-				, (ViewPager)timeline.findViewById(R.id.emotion_viewpage)
-				, (LinearLayout)timeline.findViewById(R.id.emoji_cursor));
+		emojiKeyBoard = new EmojiKeyboard(this, (ViewPager) timeline.findViewById(R.id.emotion_viewpage),
+				(LinearLayout) timeline.findViewById(R.id.emoji_cursor));
 		emojiKeyBoard.initEmojiView();
-	}
-
-	public void onRefresh() {
-		pageNum = 1;
-		friendUtils.getTimeLineData(ON_REFERSH);
-	}
-
-	@Override
-	public void onLoad() {
-		// 读取下一页朋友圈数据
-		friendUtils.getTimeLineData(ON_LOAD);
 	}
 
 	@Override
@@ -679,8 +658,19 @@ public class MainActivity extends Activity implements OnClickListener, SwipeRefr
 
 			inputManager = (InputMethodManager) commentEdit.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
 
-			mSwipeLayout.setOnRefreshListener(this);
-			mSwipeLayout.setOnLoadListener(this);
+			mSwipeLayout.setOnRefreshListener(new OnRefreshListener() {
+				@Override
+				public void onRefresh() {
+					pageNum = 1;
+					friendUtils.getTimeLineData(ON_REFERSH);
+				}
+			});
+			mSwipeLayout.setOnLoadListener(new OnLoadListener() {
+				@Override
+				public void onLoad() {
+					friendUtils.getTimeLineData(ON_LOAD);					
+				}
+			});
 
 			localPath = getApplicationContext().getFilesDir().getAbsolutePath();
 			emotionPath = localPath + "/emotion.zip";
