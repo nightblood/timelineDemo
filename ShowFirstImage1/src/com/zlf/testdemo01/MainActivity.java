@@ -232,6 +232,18 @@ public class MainActivity extends Activity implements OnClickListener, OnGesture
 					emojiView.setVisibility(View.GONE);
 				}
 				break;
+			case 12:
+				// ImageUtils.res2file(MainActivity.this,
+				// R.drawable.emoji_delete,
+				// getApplicationContext().getFilesDir().getAbsolutePath() +
+				// "/emoticon/" + "delete.png");
+
+				initView();
+
+				initMsgView();
+
+				setTabSelection(0);
+				break;
 			}
 		}
 	};
@@ -335,27 +347,36 @@ public class MainActivity extends Activity implements OnClickListener, OnGesture
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+		System.out.println("onCreate start!");
 
-		ImageUtils.res2file(this, R.drawable.emoji_delete,
-				getApplicationContext().getFilesDir().getAbsolutePath() + "/emoticon/" + "delete.png");
+		localPath = getApplicationContext().getFilesDir().getAbsolutePath();
+		EmotionInfo.emotionPath = localPath + "/emoticon/";
+		emotionPath = localPath + "/emotion.zip";
+		emotionDataPath = this.getApplicationContext().getFilesDir().getAbsolutePath() + "/emotion.txt";
 
-		item = BottomViewItem.getInstance();
-
-		if (new File(this.getApplicationContext().getFilesDir().getAbsolutePath() + "/emotion.txt").exists()) {
-			FriendOper friendOper = new FriendOper(this, null, null);
-			EmojiKeyboard.emotionList = friendOper.getEmotionList();
+		friendUtils = new FriendOper(this, handler, adapter);
+		if (!new File(localPath + "/emotion.zip").exists()) {
+			friendUtils.downloadEmotionImages();
+			System.out.println("emotion.zip ²»´æÔÚ£¡£¡£¡");
 		}
+		if (!new File(emotionDataPath).exists()) {
+			friendUtils.getEmojisData();
+			System.out.println("emotion.txt ²»´æÔÚ£¡£¡£¡");
 
-		initView();
+		} else {
+			friendUtils.getEmotionList();
+			initView();
 
-		initMsgView();
+			initMsgView();
 
-		setTabSelection(0);
+			setTabSelection(0);
+		}
 
 		System.out.println("onCreate end!");
 	}
 
 	private void initView() {
+		item = BottomViewItem.getInstance();
 		bottomLayout = findViewById(R.id.bottom_layout);
 
 		viewPager = (ViewPager) findViewById(R.id.main_viewpager);

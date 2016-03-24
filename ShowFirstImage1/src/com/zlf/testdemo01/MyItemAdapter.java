@@ -119,12 +119,14 @@ public class MyItemAdapter extends BaseAdapter{
 		friend.setVisibleFlag(false);
 		
 		if (friend.isbPraiseFlag()) {
-			holder.praiseBtn.setBackground(context.getDrawable(R.drawable.red_heart));
+			holder.praiseBtn.setBackgroundResource(R.drawable.red_heart);
+//			holder.praiseBtn.setBackground(context.getDrawable(R.drawable.red_heart));
 			addPraiseImage(holder.praiseBar);
 			holder.praiseBar.append("开发者");
 			holder.praiseBar.setVisibility(View.VISIBLE);
 		} else {
-			holder.praiseBtn.setBackground(context.getDrawable(R.drawable.icon_like));
+			holder.praiseBtn.setBackgroundResource(R.drawable.icon_like);
+//			holder.praiseBtn.setBackground(context.getDrawable(R.drawable.icon_like));
 			holder.praiseBar.setText("");
 			holder.praiseBar.setVisibility(View.GONE);
 		}
@@ -188,13 +190,15 @@ public class MyItemAdapter extends BaseAdapter{
 
 					String praise = holder.praiseText.getText().toString();
 					if (praise.equals("赞")) {
-						holder.praiseText.setText("取消");						
-						holder.praiseBtn.setBackground(context.getDrawable(R.drawable.red_heart));
+						holder.praiseText.setText("取消");		
+						holder.praiseBtn.setBackgroundResource(R.drawable.red_heart);
+//						holder.praiseBtn.setBackground(context.getDrawable(R.drawable.red_heart));
 						
 						holder.praiseBar.setText("开发者");
 					} else {
 						holder.praiseText.setText("赞");
-						holder.praiseBtn.setBackground(context.getDrawable(R.drawable.icon_like));
+						holder.praiseBtn.setBackgroundResource(R.drawable.icon_like);
+//						holder.praiseBtn.setBackground(context.getDrawable(R.drawable.icon_like));
 						holder.praiseBar.setText("。。。");
 					}
 

@@ -53,6 +53,7 @@ public class FriendOper {
 	private Context context;
 	private static Handler handler;
 	private HttpClient client;
+	private static List<EmotionInfo> emotionList;
 	
 	public FriendOper(Context context, Handler handler, MyItemAdapter adapter) {
 		this.context = context;
@@ -132,6 +133,7 @@ public class FriendOper {
 				String urlStr = arg0[0];
 				
 				HttpGet get = new HttpGet(urlStr);
+				System.out.println("网络操作：" + urlStr + "\n表情链接：" + EMOTION_URL);
 				try {
 					HttpResponse response = client.execute(get);
 					String val = EntityUtils.toString(response.getEntity());
@@ -147,6 +149,7 @@ public class FriendOper {
 						adapter.notifyDataSetChanged();
 
 					} else if (urlStr.equals(EMOTION_URL)) {
+						System.out.println("生成表情数据文件！！  " + MainActivity.emotionDataPath);
 						// appendFile(localPath + "emotion.txt", val);
 						FileUtils.appendFile(MainActivity.emotionDataPath, val);
 						// appendFile("/sdcard/emotion.txt",
@@ -169,14 +172,19 @@ public class FriendOper {
 	 * @return
 	 */
 	public List<EmotionInfo> getEmotionList() {
+		if (emotionList != null) 
+			return emotionList;
 		String path = context.getApplicationContext().getFilesDir().getAbsolutePath() + "/emotion.txt";
 		String jsonStr = FileUtils.readFileByChars(path);
 		
 		JSONObject jsonObj;
-		if (null == jsonStr)
+		if (null == jsonStr) {
+			System.out.println("emotion.txt没有数据！！");
 			return null;
+		}
 
-		List<EmotionInfo> emotionList = new ArrayList<EmotionInfo>();
+		System.out.println(jsonStr);
+		emotionList = new ArrayList<EmotionInfo>();
 		try {// 将json字符串转换为json对象
 			jsonObj = new JSONObject(jsonStr);
 			// 得到指定json key对象的value对象
@@ -196,6 +204,7 @@ public class FriendOper {
 			}
 			// 保存表情，用于替换文字
 			EmojiParser.initEmojiList(emotionList);
+			
 			// 在表情包里添加 删除表情 的图片
 			EmotionInfo delete;
 			int temp = emotionList.size() / 21; // coloum : 7, row : 3
@@ -214,7 +223,7 @@ public class FriendOper {
 		} catch (JSONException e) {
 			e.printStackTrace();
 		}
-		
+		EmojiKeyboard.emotionList = emotionList;
 		return emotionList;
 	}
 
@@ -368,7 +377,7 @@ public class FriendOper {
 	/**
 	 * 从服务器得到表情数据
 	 */
-	private void getEmotionData() {
+	public void getEmotionData() {
 		HttpUtils http = new HttpUtils();
 		String emotionUrl = "http://client.e0575.com/quanzi/app.php?c=quanzi&a=emoticon";
 		http.send(HttpRequest.HttpMethod.GET, emotionUrl, new RequestCallBack<String>() {
@@ -381,6 +390,12 @@ public class FriendOper {
 			public void onSuccess(ResponseInfo<String> responseInfo) {
 				// textView.setText(responseInfo.result);
 				MainActivity.eMotionData = responseInfo.result;
+				FileUtils.appendFile(MainActivity.emotionDataPath, responseInfo.result);
+				PostActivity.emotionList = getEmotionList();
+				
+				Message msg = new Message();
+				msg.what = 12;
+				handler.sendMessage(msg);
 			}
 
 			@Override
@@ -393,6 +408,43 @@ public class FriendOper {
 		});
 	}
 
+	/**
+	 * 从服务器得到表情包内容
+	 */
+	public void getEmojisData() {
+		HttpUtils http = new HttpUtils();
+		http.configCurrentHttpCacheExpiry(-1);
+		String url = "http://client.e0575.com/quanzi/app.php?c=quanzi&a=emoticon";
+		http.send(HttpRequest.HttpMethod.GET, url, new RequestCallBack<String>() {
+			@Override
+			public void onLoading(long total, long current, boolean isUploading) {
+			}
+
+			@Override
+			public void onSuccess(ResponseInfo<String> responseInfo) {
+				Toast.makeText(context, "Download emoji text successs!!", Toast.LENGTH_LONG).show();
+				System.out.println("表情数据下载成功！！！！！！！");
+				MainActivity.eMotionData = responseInfo.result;
+				
+				FileUtils.appendFile(MainActivity.emotionDataPath, responseInfo.result);
+				getEmotionList();
+				Message msg = new Message();
+				msg.what = 12;
+				handler.sendMessage(msg);
+				
+			}
+
+			@Override
+			public void onStart() {
+			}
+
+			@Override
+			public void onFailure(HttpException error, String msg) {
+			}
+		});
+	}
+
+	
 	/**
 	 * 下载表情包
 	 */
@@ -415,9 +467,8 @@ public class FriendOper {
 
 					@Override
 					public void onSuccess(ResponseInfo<File> responseInfo) {
-						Toast.makeText(context, "Download success!!", Toast.LENGTH_LONG).show();
-						// textView.setText("downloaded:" +
-						// responseInfo.result.getPath());
+						Toast.makeText(context, "Download emoji pictures success!!", Toast.LENGTH_LONG).show();
+						System.out.println("Download emojis success!!");
 						// 解压表情压缩文件
 						String localPath = context.getApplicationContext().getFilesDir().getAbsolutePath();
 
@@ -428,78 +479,9 @@ public class FriendOper {
 						}
 					}
 
-					public int upZipFile(String zipFilePath, String folderPath) throws ZipException, IOException {
-						// public static void upZipFile() throws Exception{
-						File zipFile = new File(zipFilePath);
-						if (!zipFile.exists()) {
-							return 1;
-						}
-						ZipFile zfile = new ZipFile(zipFile);
-						Enumeration zList = zfile.entries();
-						ZipEntry ze = null;
-						byte[] buf = new byte[1024];
-						while (zList.hasMoreElements()) {
-							ze = (ZipEntry) zList.nextElement();
-							if (ze.isDirectory()) {
-								Log.d("upZipFile", "ze.getName() = " + ze.getName());
-								String dirstr = folderPath + ze.getName();
-								// dirstr.trim();
-								dirstr = new String(dirstr.getBytes("8859_1"), "GB2312");
-								Log.d("upZipFile", "str = " + dirstr);
-								File f = new File(dirstr);
-								f.mkdir();
-								continue;
-							}
-							Log.d("upZipFile", "ze.getName() = " + ze.getName());
-
-							OutputStream os = new BufferedOutputStream(
-									new FileOutputStream(getRealPathFileName(folderPath, ze.getName())));
-							InputStream is = new BufferedInputStream(zfile.getInputStream(ze));
-							int readLen = 0;
-							while ((readLen = is.read(buf, 0, 1024)) != -1) {
-								os.write(buf, 0, readLen);
-							}
-							is.close();
-							os.close();
-						}
-						zfile.close();
-						Log.d("upZipFile", "finishssssssssssssssssssss");
-						return 0;
-					}
-
-					/**
-					 * 给定根目录，返回一个相对路径所对应的实际文件名.
-					 * 
-					 * @param baseDir
-					 *            指定根目录
-					 * @param absFileName
-					 *            相对路径名，来自于ZipEntry中的name
-					 * @return java.io.File 实际的文件
-					 */
-
-					public File getRealPathFileName(String baseDir, String absFileName) {
-						String[] dirs = absFileName.split("/");
-						String lastDir = baseDir;
-						if (dirs.length > 1) {
-							for (int i = 0; i < dirs.length - 1; i++) {
-								lastDir += (dirs[i] + "/");
-								File dir = new File(lastDir);
-								if (!dir.exists()) {
-									dir.mkdirs();
-									Log.d("getRealFileName", "create dir = " + (lastDir + "/" + dirs[i]));
-								}
-							}
-							File ret = new File(lastDir, dirs[dirs.length - 1]);
-							Log.d("upZipFile", "2ret = " + ret);
-							return ret;
-						} else {
-							return new File(baseDir, absFileName);
-						}
-					}
-
 					@Override
 					public void onFailure(HttpException error, String msg) {
-						Toast.makeText(context, "Download fail!!", Toast.LENGTH_LONG).show();
+						Toast.makeText(context, "downloadEmotionImages: Download fail!!", Toast.LENGTH_LONG).show();
 						// textView.setText(msg);
 					}
 				});
@@ -507,6 +489,75 @@ public class FriendOper {
 		// 调用cancel()方法停止下载
 		// handler.cancel();
 
+	}
+	
+	public int upZipFile(String zipFilePath, String folderPath) throws ZipException, IOException {
+		// public static void upZipFile() throws Exception{
+		File zipFile = new File(zipFilePath);
+		if (!zipFile.exists()) {
+			return 1;
+		}
+		ZipFile zfile = new ZipFile(zipFile);
+		Enumeration zList = zfile.entries();
+		ZipEntry ze = null;
+		byte[] buf = new byte[1024];
+		while (zList.hasMoreElements()) {
+			ze = (ZipEntry) zList.nextElement();
+			if (ze.isDirectory()) {
+				Log.d("upZipFile", "ze.getName() = " + ze.getName());
+				String dirstr = folderPath + ze.getName();
+				// dirstr.trim();
+				dirstr = new String(dirstr.getBytes("8859_1"), "GB2312");
+				Log.d("upZipFile", "str = " + dirstr);
+				File f = new File(dirstr);
+				f.mkdir();
+				continue;
+			}
+			Log.d("upZipFile", "ze.getName() = " + ze.getName());
+
+			OutputStream os = new BufferedOutputStream(
+					new FileOutputStream(getRealPathFileName(folderPath, ze.getName())));
+			InputStream is = new BufferedInputStream(zfile.getInputStream(ze));
+			int readLen = 0;
+			while ((readLen = is.read(buf, 0, 1024)) != -1) {
+				os.write(buf, 0, readLen);
+			}
+			is.close();
+			os.close();
+		}
+		zfile.close();
+		Log.d("upZipFile", "finishssssssssssssssssssss");
+		return 0;
+	}
+
+	/**
+	 * 给定根目录，返回一个相对路径所对应的实际文件名.
+	 * 
+	 * @param baseDir
+	 *            指定根目录
+	 * @param absFileName
+	 *            相对路径名，来自于ZipEntry中的name
+	 * @return java.io.File 实际的文件
+	 */
+
+	public File getRealPathFileName(String baseDir, String absFileName) {
+		String[] dirs = absFileName.split("/");
+		String lastDir = baseDir;
+		if (dirs.length > 1) {
+			for (int i = 0; i < dirs.length - 1; i++) {
+				lastDir += (dirs[i] + "/");
+				File dir = new File(lastDir);
+				if (!dir.exists()) {
+					dir.mkdirs();
+					Log.d("getRealFileName", "create dir = " + (lastDir + "/" + dirs[i]));
+				}
+			}
+			File ret = new File(lastDir, dirs[dirs.length - 1]);
+			Log.d("upZipFile", "2ret = " + ret);
+			return ret;
+		} else {
+			return new File(baseDir, absFileName);
+		}
 	}
 
 }

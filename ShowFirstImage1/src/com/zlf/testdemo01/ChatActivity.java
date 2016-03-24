@@ -133,9 +133,11 @@ public class ChatActivity extends BaseActivity implements OnClickListener,
 		initBaseActivity(true, false);
 
 		friendOper = new FriendOper(this, null, null);
+//		friendOper.downloadEmotionImages();
 		emotionList = friendOper.getEmotionList();
 
 		// 用于表情替换文字
+		EmojiParser.initEmojiList(emotionList);
 		EmojiParser.init(ChatActivity.this);
 		emojiParser = EmojiParser.getInstance(this);
 		

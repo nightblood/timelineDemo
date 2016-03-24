@@ -57,9 +57,15 @@ public class MyMsgAdapter extends BaseAdapter {
 		}
 		
 		holder.name.setText(datas.get(position).friendName);
+
+		System.out.println(datas.get(position).latestMsg);
+		if (datas.get(position).latestMsg == null) {
+			holder.content.setText("");
+		} else {
+			holder.content.setText(datas.get(position).latestMsg.msgBelongName + ": ");
+			holder.content.append(emojiParser.addSmileySpans(datas.get(position).latestMsg.chatData));
 			
-		holder.content.setText(datas.get(position).latestMsg.msgBelongName + ": ");
-		holder.content.append(emojiParser.addSmileySpans(datas.get(position).latestMsg.chatData));
+		}
 		
 		return convertView;
 	}
