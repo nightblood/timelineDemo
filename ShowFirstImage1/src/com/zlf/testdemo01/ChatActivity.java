@@ -132,8 +132,9 @@ public class ChatActivity extends BaseActivity implements OnClickListener,
 		
 		initBaseActivity(true, false);
 
-		friendOper = new FriendOper(this, null, null);
-//		friendOper.downloadEmotionImages();
+//		friendOper = new FriendOper(this, null);
+		friendOper = FriendOper.getInstance(this, null);
+
 		emotionList = friendOper.getEmotionList();
 
 		// 用于表情替换文字

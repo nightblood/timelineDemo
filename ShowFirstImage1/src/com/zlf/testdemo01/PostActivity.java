@@ -16,6 +16,7 @@ import com.lidroid.xutils.http.callback.RequestCallBack;
 import com.lidroid.xutils.http.client.HttpRequest;
 import com.zlf.testdemo01.domain.BasePostActivity;
 import com.zlf.testdemo01.domain.EmotionInfo;
+import com.zlf.testdemo01.utils.FileUtils;
 
 import android.app.ActionBar.LayoutParams;
 import android.app.AlertDialog;
@@ -804,7 +805,7 @@ public class PostActivity extends BasePostActivity implements OnClickListener, O
 			overridePendingTransition(R.anim.in_from_right, R.anim.out_to_left);
 			break;
 		case R.id.emotion_btn:
-			if (new File(MainActivity.emotionPath).exists()) {
+			if (new File(FileUtils.PATH_EMOJI_ZIP).exists()) {
 				showEmotion();
 			} else {
 				Toast.makeText(PostActivity.this, "没有表情包，请先下载！！！", Toast.LENGTH_SHORT).show();

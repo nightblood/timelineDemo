@@ -15,6 +15,7 @@ import com.zlf.testdemo01.domain.EmotionInfo;
 import com.zlf.testdemo01.domain.FriendInfo;
 import com.zlf.testdemo01.domain.MyViewHolder;
 import com.zlf.testdemo01.utils.DBManager;
+import com.zlf.testdemo01.utils.FileUtils;
 import com.zlf.testdemo01.utils.FriendOper;
 
 import android.app.ActionBar.LayoutParams;
@@ -48,9 +49,11 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class MainActivity extends Activity implements OnClickListener, OnGestureListener,
-		OnTouchListener, OnPageChangeListener, OnItemClickListener {
+public class MainActivity extends Activity
+		implements OnClickListener, OnGestureListener, OnTouchListener, OnPageChangeListener, OnItemClickListener {
 
+	
+	
 	private final static int DELAY_TIME = 200;
 	public static List<FriendInfo> friendList = new ArrayList<FriendInfo>();
 	private ListView listview;
@@ -58,20 +61,19 @@ public class MainActivity extends Activity implements OnClickListener, OnGesture
 	private Button button;
 	private Button download;
 	public static String localPath;
-	public static String emotionPath; // 压缩包路径
-	public static String emotionDataPath; // emotion.txt 表情包对应数据路径
-	// private TextView testText;
+//	public static String emotionPath; // Ñ¹Ëõ°üÂ·¾¶
+//	public static String emotionDataPath; // emotion.txt ±íÇé°ü¶ÔÓ¦Êý¾ÝÂ·¾¶
 	public static boolean flagHasData = false;
 	public static String eMotionData;
 
 	private RefreshLayout mSwipeLayout;
-	private static final int REFRESH_COMPLETE = 0X110;
 	protected static final int REQUST_CODE_CHAT_ACTIVITY = 0xc0;
+	protected static final int HANDLER_CLICK_COMMENT = 0xa0;
+	
 	public static int ON_LOAD = 0;
 	public static int ON_REFERSH = 1;
 	public static int pageNum = 1;
 	public static boolean bInputVisiable = false;
-	private Button commentBtn;
 	private static View commentView;
 	private static EditText commentEdit;
 	private static InputMethodManager inputManager;
@@ -102,12 +104,11 @@ public class MainActivity extends Activity implements OnClickListener, OnGesture
 		public void handleMessage(Message msg) {
 			switch (msg.what) {
 			case 2:
-				// 处理点击 返回键 事件，隐藏EditText 和虚拟键盘
+				// ´¦Àíµã»÷ ·µ»Ø¼ü ÊÂ¼þ£¬Òþ²ØEditText ºÍÐéÄâ¼üÅÌ
 				if (commentView.getVisibility() == View.VISIBLE) {
 					commentView.setVisibility(View.INVISIBLE);
 					delayShowBottomLayout(editTextHandler);
 					backTime = new Date(System.currentTimeMillis());
-					
 				}
 				if (emojiView.getVisibility() == View.VISIBLE) {
 					emojiView.setVisibility(View.GONE);
@@ -123,12 +124,12 @@ public class MainActivity extends Activity implements OnClickListener, OnGesture
 	public Handler handler = new Handler() {
 		public void handleMessage(android.os.Message msg) {
 			switch (msg.what) {
-			case 1:
-				// 处理点击发表评论按钮事务
+			case HANDLER_CLICK_COMMENT:
+				// ´¦Àíµã»÷·¢±íÆÀÂÛ°´Å¥ÊÂÎñ
 				if (commentView.getVisibility() != View.VISIBLE) {
 					commentView.setVisibility(View.VISIBLE);
 					bottomLayout.setVisibility(View.INVISIBLE);
-					// 设置焦点
+					// ÉèÖÃ½¹µã
 					commentEdit.setFocusable(true);
 					commentEdit.setFocusableInTouchMode(true);
 					commentEdit.requestFocus();
@@ -137,14 +138,14 @@ public class MainActivity extends Activity implements OnClickListener, OnGesture
 						Timer timer = new Timer();
 						timer.schedule(new TimerTask() {
 							public void run() {
-								// 显示虚拟键盘输入法
+								// ÏÔÊ¾ÐéÄâ¼üÅÌÊäÈë·¨
 								inputManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
 							}
 						}, 50);
 					}
-					// 调整 listview中item的位置，使其在编辑框的上方。
+					// µ÷Õû listviewÖÐitemµÄÎ»ÖÃ£¬Ê¹ÆäÔÚ±à¼­¿òµÄÉÏ·½¡£
 				} else {
-					// 点击评论按钮已经显示编辑区的情况下，隐藏评论编辑区并且隐藏虚拟键盘
+					// µã»÷ÆÀÂÛ°´Å¥ÒÑ¾­ÏÔÊ¾±à¼­ÇøµÄÇé¿öÏÂ£¬Òþ²ØÆÀÂÛ±à¼­Çø²¢ÇÒÒþ²ØÐéÄâ¼üÅÌ
 					commentView.setVisibility(View.INVISIBLE);
 					delayShowBottomLayout(handler);
 
@@ -157,7 +158,7 @@ public class MainActivity extends Activity implements OnClickListener, OnGesture
 
 				break;
 			case 2:
-				// 处理点击返回键事件，隐藏EditText 和虚拟键盘
+				// ´¦Àíµã»÷·µ»Ø¼üÊÂ¼þ£¬Òþ²ØEditText ºÍÐéÄâ¼üÅÌ
 				if (commentView.getVisibility() == View.VISIBLE) {
 					commentView.setVisibility(View.INVISIBLE);
 					delayShowBottomLayout(handler);
@@ -180,18 +181,19 @@ public class MainActivity extends Activity implements OnClickListener, OnGesture
 			case 4:
 				showPopupWindow(msg);
 				break;
-			case 5:
+			case FriendOper.HANDLER_ON_LOAD:
 				mSwipeLayout.setLoading(false);
 
 				break;
-			case 6:
+			case FriendOper.HANDLER_ON_FRESH:
 				mSwipeLayout.setRefreshing(false);
 				break;
-			case 7:
+			case FriendOper.HANDLER_ADAPTER_DATA_CHANGED_NOTIFY:
+				pageNum++;
 				adapter.notifyDataSetChanged();
 				break;
 			case 8:
-				// 滑动时，隐藏评论编辑框，并且显示底部导航栏
+				// »¬¶¯Ê±£¬Òþ²ØÆÀÂÛ±à¼­¿ò£¬²¢ÇÒÏÔÊ¾µ×²¿µ¼º½À¸
 				commentView.setVisibility(View.INVISIBLE);
 				delayShowBottomLayout(handler);
 				if (emojiView.getVisibility() == View.VISIBLE) {
@@ -199,7 +201,7 @@ public class MainActivity extends Activity implements OnClickListener, OnGesture
 				}
 				break;
 			case 9:
-				// 已显示评论编辑框前提下，点击朋友圈图片，或者其他控件，需要隐藏编辑框，并且显示底部导航栏
+				// ÒÑÏÔÊ¾ÆÀÂÛ±à¼­¿òÇ°ÌáÏÂ£¬µã»÷ÅóÓÑÈ¦Í¼Æ¬£¬»òÕßÆäËû¿Ø¼þ£¬ÐèÒªÒþ²Ø±à¼­¿ò£¬²¢ÇÒÏÔÊ¾µ×²¿µ¼º½À¸
 				if (commentView.getVisibility() == View.VISIBLE) {
 					commentView.setVisibility(View.INVISIBLE);
 					delayShowBottomLayout(handler);
@@ -232,11 +234,7 @@ public class MainActivity extends Activity implements OnClickListener, OnGesture
 					emojiView.setVisibility(View.GONE);
 				}
 				break;
-			case 12:
-				// ImageUtils.res2file(MainActivity.this,
-				// R.drawable.emoji_delete,
-				// getApplicationContext().getFilesDir().getAbsolutePath() +
-				// "/emoticon/" + "delete.png");
+			case FriendOper.HANGDLE_INIT_VIEW:
 
 				initView();
 
@@ -249,7 +247,7 @@ public class MainActivity extends Activity implements OnClickListener, OnGesture
 	};
 
 	/**
-	 * 延迟显示底部导航栏
+	 * ÑÓ³ÙÏÔÊ¾µ×²¿µ¼º½À¸
 	 */
 	private static void delayShowBottomLayout(Handler handler) {
 		handler.postDelayed(new Runnable() {
@@ -279,16 +277,18 @@ public class MainActivity extends Activity implements OnClickListener, OnGesture
 					vibrator.vibrate(50);
 
 					String praise = praiseText.getText().toString();
-					if (praise.equals("赞")) {
+					if (praise.equals("ÔÞ")) {
 						friend.setPraiseFlag(true);
-						praiseText.setText("取消");
-						praiseBtn.setBackground(MainActivity.this.getDrawable(R.drawable.red_heart));
-						Toast.makeText(MainActivity.this, "已点赞", Toast.LENGTH_SHORT).show();
+						praiseText.setText("È¡Ïû");
+						praiseBtn.setBackgroundResource(R.drawable.red_heart);
+						// praiseBtn.setBackground(MainActivity.this.getDrawable(R.drawable.red_heart));
+						Toast.makeText(MainActivity.this, "ÒÑµãÔÞ", Toast.LENGTH_SHORT).show();
 					} else {
 						friend.setPraiseFlag(false);
-						praiseText.setText("赞");
-						praiseBtn.setBackground(MainActivity.this.getDrawable(R.drawable.icon_like));
-						Toast.makeText(MainActivity.this, "已取消点赞", Toast.LENGTH_SHORT).show();
+						praiseText.setText("ÔÞ");
+						praiseBtn.setBackgroundResource(R.drawable.icon_like);
+						// praiseBtn.setBackground(MainActivity.this.getDrawable(R.drawable.icon_like));
+						Toast.makeText(MainActivity.this, "ÒÑÈ¡ÏûµãÔÞ", Toast.LENGTH_SHORT).show();
 					}
 					adapter.notifyDataSetChanged();
 					window.dismiss();
@@ -300,7 +300,7 @@ public class MainActivity extends Activity implements OnClickListener, OnGesture
 				@Override
 				public void onClick(View v) {
 					Message msg = new Message();
-					msg.what = 1;
+					msg.what = HANDLER_CLICK_COMMENT;
 					handler.sendMessage(msg);
 					window.dismiss();
 				}
@@ -310,14 +310,14 @@ public class MainActivity extends Activity implements OnClickListener, OnGesture
 
 			window.setAnimationStyle(R.style.anim_popup_comment);
 
-			// 需要设置背景，用物理键返回的时候
+			// ÐèÒªÉèÖÃ±³¾°£¬ÓÃÎïÀí¼ü·µ»ØµÄÊ±ºò
 			window.setBackgroundDrawable(new BitmapDrawable(MainActivity.this.getResources()));
 
 			window.setFocusable(false);
 			window.setTouchable(true);
 			window.setOutsideTouchable(true);
 
-			view.setOnTouchListener(new OnTouchListener() {// 需要设置，点击之后取消popupview，即使点击外面，也可以捕获事件
+			view.setOnTouchListener(new OnTouchListener() {// ÐèÒªÉèÖÃ£¬µã»÷Ö®ºóÈ¡Ïûpopupview£¬¼´Ê¹µã»÷ÍâÃæ£¬Ò²¿ÉÒÔ²¶»ñÊÂ¼þ
 															// {
 				public boolean onTouch(View v, MotionEvent event) {
 					if (window.isShowing()) {
@@ -331,10 +331,10 @@ public class MainActivity extends Activity implements OnClickListener, OnGesture
 			window.dismiss();
 		} else {
 			if (friend.isbPraiseFlag()) {
-				praiseText.setText("取消");
+				praiseText.setText("È¡Ïû");
 				praiseBtn.setBackgroundResource(R.drawable.red_heart);
 			} else {
-				praiseText.setText("赞");
+				praiseText.setText("ÔÞ");
 				praiseBtn.setBackgroundResource(R.drawable.icon_like);
 			}
 			if (holder != null)
@@ -350,20 +350,22 @@ public class MainActivity extends Activity implements OnClickListener, OnGesture
 		System.out.println("onCreate start!");
 
 		localPath = getApplicationContext().getFilesDir().getAbsolutePath();
-		EmotionInfo.emotionPath = localPath + "/emoticon/";
-		emotionPath = localPath + "/emotion.zip";
-		emotionDataPath = this.getApplicationContext().getFilesDir().getAbsolutePath() + "/emotion.txt";
+		FileUtils.PATH_EMOJI_TXT = localPath + "/emotion.txt";
+		FileUtils.PATH_EMOJI_ZIP = localPath + "/emotion.zip";
+		FileUtils.DIR_EMOJI_IMAGES = localPath + "/emoticon";
+		FileUtils.DIR_APPLICATION = localPath;
 
-		friendUtils = new FriendOper(this, handler, adapter);
-		if (!new File(localPath + "/emotion.zip").exists()) {
-			friendUtils.downloadEmotionImages();
+		friendUtils = FriendOper.getInstance(this, handler);
+		
+		if (!new File(FileUtils.PATH_EMOJI_ZIP).exists()) {
+			friendUtils.getEmojiZipData();
 			System.out.println("emotion.zip ²»´æÔÚ£¡£¡£¡");
 		}
-		if (!new File(emotionDataPath).exists()) {
-			friendUtils.getEmojisData();
+		if (!new File(FileUtils.PATH_EMOJI_TXT).exists()) {
+			friendUtils.getEmojiTxtData();
 			System.out.println("emotion.txt ²»´æÔÚ£¡£¡£¡");
-
 		} else {
+			
 			friendUtils.getEmotionList();
 			initView();
 
@@ -408,7 +410,7 @@ public class MainActivity extends Activity implements OnClickListener, OnGesture
 
 	private void initMsgView() {
 		View msgView = mViewItems.get(0);
-		
+
 		msgListView = (ListView) msgView.findViewById(R.id.msg_listview);
 		msgListView.setOnItemClickListener(new OnItemClickListener() {
 			@Override
@@ -448,7 +450,6 @@ public class MainActivity extends Activity implements OnClickListener, OnGesture
 		// commentEdit = (IgnoreSoftKeyboardEditText)
 		// findViewById(R.id.comment_edit);
 		commentEdit = (EditText) timeline.findViewById(R.id.comment_edit);
-		commentBtn = (Button) timeline.findViewById(R.id.comment_send);
 		mSwipeLayout = (RefreshLayout) timeline.findViewById(R.id.id_swipe_ly);
 		listview = (ListView) timeline.findViewById(R.id.lv);
 		button = (Button) header.findViewById(R.id.button1);
@@ -458,14 +459,14 @@ public class MainActivity extends Activity implements OnClickListener, OnGesture
 
 		commitPraiseBtn = (Button) timeline.findViewById(R.id.comment_send);
 		commitPraiseBtn.setOnClickListener(this);
-		
+
 		mLayout = (MyLayout) timeline.findViewById(R.id.timeline_mylayout);
 		mLayout.setOnChangeLayoutListener(new OnLayoutChangedListener() {
-			
+
 			@Override
 			public void layoutChanged(Boolean bInputVisiable) {
 				MainActivity.bInputVisiable = bInputVisiable;
-				
+
 				if (bInputVisiable == true) {
 					Message msg = new Message();
 					msg.what = 11;
@@ -473,7 +474,7 @@ public class MainActivity extends Activity implements OnClickListener, OnGesture
 				}
 			}
 		});
-		
+
 		emojiView = timeline.findViewById(R.id.emoji_layout);
 		emojiBtn = (Button) timeline.findViewById(R.id.emoji_btn);
 		emojiBtn.setOnClickListener(new OnClickListener() {
@@ -500,7 +501,7 @@ public class MainActivity extends Activity implements OnClickListener, OnGesture
 			if (comment == null) {
 				return;
 			} else {
-				friend.addCommentContent("开发者: " + comment);
+				friend.addCommentContent("¿ª·¢Õß: " + comment);
 			}
 			adapter.notifyDataSetChanged();
 			commentEdit.setText("");
@@ -516,11 +517,12 @@ public class MainActivity extends Activity implements OnClickListener, OnGesture
 			overridePendingTransition(R.anim.in_from_right, R.anim.out_to_left);
 			break;
 		case R.id.download_btn:
-			if (new File(emotionPath).exists()) {
-				Toast.makeText(MainActivity.this, "表情包已下载!!", Toast.LENGTH_LONG).show();
+			if (new File(FileUtils.PATH_EMOJI_ZIP).exists()) {
+				Toast.makeText(MainActivity.this, "±íÇé°üÒÑÏÂÔØ!!", Toast.LENGTH_LONG).show();
 			} else {
-				friendUtils.downloadEmotionImages();
-				friendUtils.readNet(FriendOper.EMOTION_URL);
+				friendUtils.getEmojiZipData();
+//				friendUtils.readNet(FriendOper.EMOTION_URL);
+				friendUtils.getEmojiTxtData();
 			}
 			break;
 		case R.id.message_layout:
@@ -576,7 +578,7 @@ public class MainActivity extends Activity implements OnClickListener, OnGesture
 	}
 
 	/*
-	 * 滑动时，隐藏评论编辑区和输入法
+	 * »¬¶¯Ê±£¬Òþ²ØÆÀÂÛ±à¼­ÇøºÍÊäÈë·¨
 	 */
 	@Override
 	public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
@@ -586,7 +588,7 @@ public class MainActivity extends Activity implements OnClickListener, OnGesture
 	}
 
 	/*
-	 * 滑动时，隐藏评论编辑区和输入法
+	 * »¬¶¯Ê±£¬Òþ²ØÆÀÂÛ±à¼­ÇøºÍÊäÈë·¨
 	 */
 	@Override
 	public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
@@ -608,7 +610,6 @@ public class MainActivity extends Activity implements OnClickListener, OnGesture
 	@Override
 	public void onShowPress(MotionEvent e) {
 		// TODO Auto-generated method stub
-
 	}
 
 	@Override
@@ -628,10 +629,6 @@ public class MainActivity extends Activity implements OnClickListener, OnGesture
 		super.onResume();
 	}
 
-	@Override
-	protected void onStart() {
-		super.onStart();
-	}
 
 	@Override
 	protected void onStop() {
@@ -662,7 +659,6 @@ public class MainActivity extends Activity implements OnClickListener, OnGesture
 	@Override
 	public void onPageScrollStateChanged(int arg0) {
 		// TODO Auto-generated method stub
-
 	}
 
 	@Override
@@ -683,19 +679,16 @@ public class MainActivity extends Activity implements OnClickListener, OnGesture
 				@Override
 				public void onRefresh() {
 					pageNum = 1;
-					friendUtils.getTimeLineData(ON_REFERSH);
+					friendUtils.getTimeLineData(ON_REFERSH, pageNum);
 				}
 			});
 			mSwipeLayout.setOnLoadListener(new OnLoadListener() {
 				@Override
 				public void onLoad() {
-					friendUtils.getTimeLineData(ON_LOAD);					
+					
+					friendUtils.getTimeLineData(ON_LOAD, pageNum);
 				}
 			});
-
-			localPath = getApplicationContext().getFilesDir().getAbsolutePath();
-			emotionPath = localPath + "/emotion.zip";
-			emotionDataPath = localPath + "/emotion.txt";
 
 			button.setOnClickListener(this);
 			download.setOnClickListener(this);
@@ -706,17 +699,15 @@ public class MainActivity extends Activity implements OnClickListener, OnGesture
 			dector = new GestureDetector(this);
 			listview.setOnTouchListener(this);
 
-			friendUtils = new FriendOper(this, handler, adapter);
+			friendUtils = FriendOper.getInstance(this, handler);
 
-			EmotionInfo.emotionPath = localPath + "/emoticon/";
-			File emotionDataFile = new File(emotionDataPath);
+			File emotionDataFile = new File(FileUtils.PATH_EMOJI_TXT);
 			if (emotionDataFile.exists()) {
-				// 解析表情包数据
-//				String emotionData = FileUtils.readFileByChars(localPath + "/emotion.txt");
+				// ½âÎö±íÇé°üÊý¾Ý
 				PostActivity.emotionList = friendUtils.getEmotionList();
 			}
 
-			friendUtils.getTimeLineData(ON_REFERSH);
+			friendUtils.getTimeLineData(ON_REFERSH, pageNum);
 		}
 	}
 
@@ -745,11 +736,12 @@ public class MainActivity extends Activity implements OnClickListener, OnGesture
 
 	@Override
 	public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
-		// 点击emoji表情，添加到编辑框
-		Toast.makeText(MainActivity.this, "emoji:" + emojiKeyBoard.getPageNum() + " -- " + arg2, Toast.LENGTH_SHORT).show();
+		// µã»÷emoji±íÇé£¬Ìí¼Óµ½±à¼­¿ò
+		Toast.makeText(MainActivity.this, "emoji:" + emojiKeyBoard.getPageNum() + " -- " + arg2, Toast.LENGTH_SHORT)
+				.show();
 		emojiKeyBoard.clickEmoji(commentEdit, emojiKeyBoard.getPageNum(), arg2);
 	}
-	
+
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		if (resultCode == 1 && requestCode == REQUST_CODE_CHAT_ACTIVITY) {

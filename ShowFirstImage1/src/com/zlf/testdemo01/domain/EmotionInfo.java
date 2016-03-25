@@ -8,7 +8,7 @@ public class EmotionInfo implements Parcelable {
 	private String image_name;
 	private String text;
 	
-	public static String emotionPath;
+//	public static String emotionPath;
 	
 	public String getText() {
 		return text;

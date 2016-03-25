@@ -7,8 +7,16 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 
-public class FileUtils {
+import com.zlf.testdemo01.MainActivity;
+import com.zlf.testdemo01.domain.EmotionInfo;
 
+public class FileUtils {
+	
+	public static String PATH_EMOJI_TXT;
+	public static String PATH_EMOJI_ZIP;
+	public static String DIR_EMOJI_IMAGES; 
+
+	public static String DIR_APPLICATION;
 	/**
 	 * 读取文件内容并返回
 	 * 
@@ -20,7 +28,7 @@ public class FileUtils {
 		String data = "";
 
 		if (!file.exists()) {
-			System.out.println("error file name!!");
+			System.out.println("error file name!! " + fileName + "\n" + PATH_EMOJI_TXT);
 			return null;
 		}
 		Reader reader = null;

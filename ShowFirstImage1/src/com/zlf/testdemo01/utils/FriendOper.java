@@ -49,34 +49,51 @@ public class FriendOper {
 	
 	public final static String TIMELINE_URL = "http://client.e0575.com/quanzi/app.php?c=quanzi&a=mainlist";
 	public final static String EMOTION_URL = "http://client.e0575.com/quanzi/app.php?c=quanzi&a=emoticon";
-	private static MyItemAdapter adapter;
-	private Context context;
+	
+	public final static int HANDLER_ON_FRESH = 0XF6;
+	public final static int HANDLER_ON_LOAD = 0XF7;
+	public final static int HANDLER_ADAPTER_DATA_CHANGED_NOTIFY = 0XF8;
+	public final static int HANGDLE_INIT_VIEW = 0XF0;
+	
+	private static Context context;
 	private static Handler handler;
-	private HttpClient client;
 	private static List<EmotionInfo> emotionList;
 	
-	public FriendOper(Context context, Handler handler, MyItemAdapter adapter) {
+	private static FriendOper friendOper;
+	
+	public static synchronized FriendOper getInstance(Context context, Handler handler) {
+		if (friendOper == null) {
+			friendOper = new FriendOper(context, handler);
+		}
+		FriendOper.context = context;
+		return friendOper;
+	}
+	
+	private FriendOper(Context context, Handler handler) {
 		this.context = context;
 		this.handler = handler;
-		this.adapter = adapter;
 	}
 
 	/**
 	 * 从服务器得到朋友圈内容
 	 */
-	public void getTimeLineData(final int flagPullOrRefersh) {
+	public void getTimeLineData(final int flagPullOrRefersh, final int pageNum) {
 		HttpUtils http = new HttpUtils();
 		http.configCurrentHttpCacheExpiry(-1);
-		String url = TIMELINE_URL + "&page=" + MainActivity.pageNum;
+		String url = TIMELINE_URL + "&page=" + pageNum;
 		http.send(HttpRequest.HttpMethod.GET, url, new RequestCallBack<String>() {
 			@Override
 			public void onLoading(long total, long current, boolean isUploading) {
-				// testText.setText(current + "/" + total);
 			}
 
 			@Override
 			public void onSuccess(ResponseInfo<String> responseInfo) {
 				Message msg;
+				
+				if (handler == null) {
+					System.out.println("Error : handler is null!!" );
+					return;
+				}
 			
 				// 解析得到的 json 数据
 				if (flagPullOrRefersh == MainActivity.ON_LOAD) {
@@ -84,85 +101,36 @@ public class FriendOper {
 					MainActivity.friendList.addAll(parseTimeLineJsonData(responseInfo.result));
 					
 					msg = new Message();
-					msg.what = 5;
+					msg.what = HANDLER_ON_LOAD;
 					handler.sendMessage(msg);
-//					mSwipeLayout.setLoading(false);
 					
 				} else if (flagPullOrRefersh == MainActivity.ON_REFERSH) {
 					// 下拉刷新
 					MainActivity.friendList.clear();
 					MainActivity.friendList.addAll(parseTimeLineJsonData(responseInfo.result));
-					/* 2013/3/8 : 使用开源项目的PullToRefershListView 代替RefreshView */
-//					mSwipeLayout.setRefreshing(false);
-//					mSwipeLayout.onRefreshComplete();
+					
 					msg = new Message();
-					msg.what = 6;
+					msg.what = HANDLER_ON_FRESH;
 					handler.sendMessage(msg);
 				} else {
 					System.out.println("Error input variable!!!");
 				}
 				
-				MainActivity.pageNum++;
 				if (MainActivity.friendList != null) {
 					MainActivity.flagHasData = true;
 				}
-//				adapter.notifyDataSetChanged();
 				msg = new Message();
-				msg.what = 7;
+				msg.what = HANDLER_ADAPTER_DATA_CHANGED_NOTIFY;
 				handler.sendMessage(msg);
 			}
 
 			@Override
 			public void onStart() {
-
 			}
-
 			@Override
 			public void onFailure(HttpException error, String msg) {
-
 			}
 		});
-	}
-
-	/* 异步方式读取服务端数据 */
-	public void readNet(String url) {
-		new AsyncTask<String, Void, String>() {
-			@Override
-			protected String doInBackground(String... arg0) {
-				
-				String urlStr = arg0[0];
-				
-				HttpGet get = new HttpGet(urlStr);
-				System.out.println("网络操作：" + urlStr + "\n表情链接：" + EMOTION_URL);
-				try {
-					HttpResponse response = client.execute(get);
-					String val = EntityUtils.toString(response.getEntity());
-
-					if (urlStr.equals(TIMELINE_URL)) {
-						// friendList = getFriendsList(val);
-						MainActivity.friendList.clear();
-						MainActivity.friendList.addAll(getFriendsList(val));
-
-						Message msg = new Message();
-						msg.what = 7;				
-						handler.sendMessage(msg);
-						adapter.notifyDataSetChanged();
-
-					} else if (urlStr.equals(EMOTION_URL)) {
-						System.out.println("生成表情数据文件！！  " + MainActivity.emotionDataPath);
-						// appendFile(localPath + "emotion.txt", val);
-						FileUtils.appendFile(MainActivity.emotionDataPath, val);
-						// appendFile("/sdcard/emotion.txt",
-						// "----------------");
-						PostActivity.emotionList = getEmotionList();
-					}
-					return val;
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-				return null;
-			}
-		}.execute(url);
 	}
 
 	/**
@@ -174,8 +142,8 @@ public class FriendOper {
 	public List<EmotionInfo> getEmotionList() {
 		if (emotionList != null) 
 			return emotionList;
-		String path = context.getApplicationContext().getFilesDir().getAbsolutePath() + "/emotion.txt";
-		String jsonStr = FileUtils.readFileByChars(path);
+//		String path = context.getApplicationContext().getFilesDir().getAbsolutePath() + "/emotion.txt";
+		String jsonStr = FileUtils.readFileByChars(FileUtils.PATH_EMOJI_TXT);
 		
 		JSONObject jsonObj;
 		if (null == jsonStr) {
@@ -213,7 +181,8 @@ public class FriendOper {
 				delete = new EmotionInfo();
 				delete.setImageName("delete.png");
 				delete.setText("删除");
-				delete.emotionPath = context.getApplicationContext().getFilesDir().getAbsolutePath() +  "/emoticon/" + "delete.png";
+				
+//				delete.emotionPath = FileUtils.DIR_EMOJI_IMAGES + "delete.png";
 				if (i == pageCount) {
 					emotionList.add(delete);
 				} else {
@@ -377,41 +346,35 @@ public class FriendOper {
 	/**
 	 * 从服务器得到表情数据
 	 */
-	public void getEmotionData() {
+	public void getEmojiZipData() {
 		HttpUtils http = new HttpUtils();
-		String emotionUrl = "http://client.e0575.com/quanzi/app.php?c=quanzi&a=emoticon";
-		http.send(HttpRequest.HttpMethod.GET, emotionUrl, new RequestCallBack<String>() {
+		String emojiZipUrl = "http://client.e0575.com/quanzi/doc/emoticon.zip";
+		http.download(emojiZipUrl, FileUtils.PATH_EMOJI_ZIP, new RequestCallBack<File>() {
+
 			@Override
-			public void onLoading(long total, long current, boolean isUploading) {
-				// testTextView.setText(current + "/" + total);
+			public void onFailure(HttpException arg0, String arg1) {
+				Toast.makeText(context, "Download emoji.zip fail!!", Toast.LENGTH_LONG).show();
 			}
 
 			@Override
-			public void onSuccess(ResponseInfo<String> responseInfo) {
-				// textView.setText(responseInfo.result);
-				MainActivity.eMotionData = responseInfo.result;
-				FileUtils.appendFile(MainActivity.emotionDataPath, responseInfo.result);
-				PostActivity.emotionList = getEmotionList();
-				
-				Message msg = new Message();
-				msg.what = 12;
-				handler.sendMessage(msg);
-			}
-
-			@Override
-			public void onStart() {
-			}
-
-			@Override
-			public void onFailure(HttpException error, String msg) {
+			public void onSuccess(ResponseInfo<File> arg0) {
+				Toast.makeText(context, "Download emoji pictures success!!", Toast.LENGTH_LONG).show();
+				System.out.println("Download emojis success!!");
+				// 解压表情压缩文件
+				try {
+					upZipFile(FileUtils.PATH_EMOJI_ZIP, FileUtils.DIR_APPLICATION + "/");
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 			}
 		});
+		
 	}
 
 	/**
 	 * 从服务器得到表情包内容
 	 */
-	public void getEmojisData() {
+	public void getEmojiTxtData() {
 		HttpUtils http = new HttpUtils();
 		http.configCurrentHttpCacheExpiry(-1);
 		String url = "http://client.e0575.com/quanzi/app.php?c=quanzi&a=emoticon";
@@ -426,10 +389,10 @@ public class FriendOper {
 				System.out.println("表情数据下载成功！！！！！！！");
 				MainActivity.eMotionData = responseInfo.result;
 				
-				FileUtils.appendFile(MainActivity.emotionDataPath, responseInfo.result);
+				FileUtils.appendFile(FileUtils.PATH_EMOJI_TXT, responseInfo.result);
 				getEmotionList();
 				Message msg = new Message();
-				msg.what = 12;
+				msg.what = HANGDLE_INIT_VIEW;
 				handler.sendMessage(msg);
 				
 			}
@@ -444,53 +407,6 @@ public class FriendOper {
 		});
 	}
 
-	
-	/**
-	 * 下载表情包
-	 */
-	public void downloadEmotionImages() {
-		HttpUtils http = new HttpUtils();
-		HttpHandler handler = http.download("http://client.e0575.com/quanzi/doc/emoticon.zip", MainActivity.emotionPath, true, // 如果目标文件存在，接着未完成的部分继续下载。服务器不支持RANGE时将从新下载。
-				true, // 如果从请求返回信息中获取到文件名，下载完成后自动重命名。
-				new RequestCallBack<File>() {
-
-					@Override
-					public void onStart() {
-						Toast.makeText(context, "Download start!!", Toast.LENGTH_LONG).show();
-						// textView.setText("conn...");
-					}
-
-					@Override
-					public void onLoading(long total, long current, boolean isUploading) {
-						// textView.setText(current + "/" + total);
-					}
-
-					@Override
-					public void onSuccess(ResponseInfo<File> responseInfo) {
-						Toast.makeText(context, "Download emoji pictures success!!", Toast.LENGTH_LONG).show();
-						System.out.println("Download emojis success!!");
-						// 解压表情压缩文件
-						String localPath = context.getApplicationContext().getFilesDir().getAbsolutePath();
-
-						try {
-							upZipFile(localPath + "/emotion.zip", localPath + "/");
-						} catch (Exception e) {
-							e.printStackTrace();
-						}
-					}
-
-					@Override
-					public void onFailure(HttpException error, String msg) {
-						Toast.makeText(context, "downloadEmotionImages: Download fail!!", Toast.LENGTH_LONG).show();
-						// textView.setText(msg);
-					}
-				});
-
-		// 调用cancel()方法停止下载
-		// handler.cancel();
-
-	}
-	
 	public int upZipFile(String zipFilePath, String folderPath) throws ZipException, IOException {
 		// public static void upZipFile() throws Exception{
 		File zipFile = new File(zipFilePath);

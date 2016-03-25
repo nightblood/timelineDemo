@@ -3,6 +3,7 @@ package com.zlf.testdemo01;
 import java.util.List;
 
 import com.zlf.testdemo01.domain.EmotionInfo;
+import com.zlf.testdemo01.utils.FileUtils;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -66,7 +67,7 @@ public class MyEmojiAdapter extends BaseAdapter{
 		vh.iv = (ImageView) convertView.findViewById(R.id.image);
 //		vh.iv.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
 		vh.iv.setTag(data.get(position));
-		bm = BitmapFactory.decodeFile(context.getApplicationContext().getFilesDir().getAbsolutePath() + "/emoticon/" + data.get(position).getImageName());
+		bm = BitmapFactory.decodeFile(FileUtils.DIR_EMOJI_IMAGES + "/" + data.get(position).getImageName());
 	
 		vh.iv.setImageBitmap(bm);
 		

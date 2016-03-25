@@ -7,6 +7,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.zlf.testdemo01.domain.EmotionInfo;
+import com.zlf.testdemo01.utils.FileUtils;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -114,8 +115,8 @@ public class EmotionUtils {
 			
 			if (emoji == null) 
 				continue;
-			
-			Bitmap bitmap = BitmapFactory.decodeFile(EmotionInfo.emotionPath + emoji.getImageName());
+			Bitmap bitmap = BitmapFactory.decodeFile(FileUtils.DIR_EMOJI_IMAGES + "/" + emoji.getImageName());
+//			Bitmap bitmap = BitmapFactory.decodeFile(EmotionInfo.emotionPath + emoji.getImageName());
 			
 //			System.out.println("ffffffffffffffffff"+dip2px(context, 25));
 			bitmap = Bitmap.createScaledBitmap(bitmap, dip2px(context, 25), dip2px(context, 25), true);
